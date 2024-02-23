@@ -1,4 +1,7 @@
 import {Bot} from "grammy";
+import { Menu } from "@grammyjs/menu";
+import { EmojiFlavor, emojiParser } from "@grammyjs/emoji";
+import { User } from "@grammyjs/types";
 require("dotenv").config();
 
 const BOT_TOKEN = process.env.BOT_TOKEN as string;
@@ -7,14 +10,71 @@ const BOT_TOKEN = process.env.BOT_TOKEN as string;
 const bot = new Bot(BOT_TOKEN);
 
 // Список команд
-// play - Начать игру
-// goal - Цель игры
-// objectives - Задачи игры
-// rules - Как играть
+const commands = [
+  {
+    command: "play",
+    description: "Начать игру",
+  },
+  {
+    command: "goal",
+    description: "Цель игры",
+  },
+  {
+    command: "objectives",
+    description: "Задачи игры",
+  },
+  {
+    command: "rules",
+    description: "Как играть",
+  },
+];
 
-bot.command("start", (ctx) =>
-  ctx.reply(`Привет, ${ctx.from?.first_name || "друг"}!`)
-);
+bot.use(emojiParser());
+
+// Create an invitation button
+const invitationButton = new Menu("invitation-menu").text("fbdb");
+bot.use(invitationButton);
+
+// Create a simple menu
+const menu = new Menu<EmojiFlavor>("start-menu")
+  .text(
+    async (ctx) => await ctx.emoji`Forever alone ${"loudly_crying_face"}`,
+    (replyCtx) => replyCtx.reply("Что ж, и такое бывает!")
+  )
+  .row()
+  .text(
+    async (ctx) =>
+      await ctx.emoji`Два енота, два хвоста ${"raccoon"}${"raccoon"}`,
+    async (ctx) => {
+      await ctx.reply(
+        "Пригласите второго игрока, отправив ему ссылку-приглашение:"
+      );
+      ctx.reply(`https://t.me/speaking_ostrich_bot?start=${ctx.from.id}`);
+    }
+  );
+
+// Make it interactive
+bot.use(menu);
+
+bot.command("start", async (ctx) => {
+  await console.log(ctx.match);
+
+  if (ctx.match) {
+    const userInvited = await bot.api.getChat(ctx.match);
+    const username = (userInvited as unknown as User).username;
+
+    ctx.reply(`@${username} пригласил Вас в игру Детективный страус!`);
+    bot.api.sendMessage(
+      ctx.match,
+      `Ваш друг @${ctx.from?.username} присоединился к игре`
+    );
+
+    return;
+  }
+
+  await ctx.reply(`Привет, ${ctx.from?.first_name || "друг"}!`);
+  await ctx.reply("Выберите количество игроков:", { reply_markup: menu });
+});
 
 bot.command("goal", (ctx) => {
   const goalTitle = "Цель игры";
@@ -41,4 +101,8 @@ bot.command("objectives", (ctx) => {
 
 //Start the Bot
 bot.start();
+
+// Установить список команд
+bot.api.setMyCommands(commands);
+
 // bot.api.sendMessage(chat_id, "Hi!");

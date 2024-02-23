@@ -24,6 +24,9 @@
   },
   "homepage": "https://github.com/arina-bezdushnaya/detective-ostrich-bot#readme",
   "dependencies": {
+    "@grammyjs/emoji": "^1.2.0",
+    "@grammyjs/menu": "^1.2.1",
+    "@grammyjs/types": "^3.5.2",
     "@types/node-fetch": "2.6.11",
     "dotenv": "16.4.5",
     "grammy": "1.15.3"
