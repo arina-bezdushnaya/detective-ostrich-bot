@@ -14,3 +14,9 @@ export interface Game {
   turn: string;
   turnNumber: number;
 }
+
+export enum Step {
+  "GAME_TYPE" = "GAME_TYPE",
+  "PLAYERS" = "PLAYERS",
+  "GAME" = "GAME",
+}

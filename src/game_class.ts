@@ -1,16 +1,19 @@
 import { gamesMap } from "./constants";
+import { Step } from "./types";
 
 export class Game {
   id: string;
   name: string;
   playersNumber: number;
+  step: Step;
   // turn: string;
   // turnNumber: number;
 
-  constructor(id: string) {
-    this.id = id;
-    this.name = gamesMap.get(id) || "";
+  constructor() {
+    this.id = "";
+    this.name = "";
     this.playersNumber = 0;
+    this.step = Step.GAME_TYPE;
     // this.getClues();
   }
 
@@ -23,7 +26,15 @@ export class Game {
 
   setPlayerNumber(value: number) {
     this.playersNumber = value;
-    // console.log(`name: ${this.name}  age: ${this.age}`);
+  }
+
+  setGameType(id: string) {
+    this.id = id;
+    this.name = gamesMap.get(id) || "";
+  }
+
+  setStep(step: Step) {
+    this.step = step;
   }
 
   // function initializeTasks() {

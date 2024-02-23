@@ -1,15 +1,19 @@
 import { gamesState } from "./bot";
+import { Game } from "./game_class";
 
-export const game = (chatId?: number) => {
-  const currentGame = gamesState.get(chatId);
-  console.log(currentGame);
+export const game = (chatId?: number, initialId?: number) => {
+  const currentGame = (id?: number) => gamesState.get(id);
 
-  if (currentGame) {
-    console.log("fbgfgc");
-    return currentGame;
+  if (initialId) {
+    gamesState.set(chatId, currentGame(initialId));
+    return currentGame(chatId);
+  }
+
+  if (currentGame(chatId)) {
+    return currentGame(chatId);
   } else {
-    gamesState.set(chatId, null);
-    return null;
+    gamesState.set(chatId, new Game());
+    return currentGame(chatId);
   }
 };
 

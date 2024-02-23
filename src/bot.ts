@@ -1,6 +1,5 @@
-import { Bot } from "grammy";
+import { Bot, GrammyError, HttpError } from "grammy";
 import { EmojiFlavor, emojiParser } from "@grammyjs/emoji";
-import { commands } from "./constants";
 import { insertCommands } from "./commands";
 require("dotenv").config();
 
@@ -19,8 +18,21 @@ insertCommands();
 //Start the Bot
 bot.start();
 
+bot.catch((err) => {
+  const ctx = err.ctx;
+  console.error(`Error while handling update ${ctx.update.update_id}:`);
+  const e = err.error;
+  if (e instanceof GrammyError) {
+    console.error("Error in request:", e.description);
+  } else if (e instanceof HttpError) {
+    console.error("Could not contact Telegram:", e);
+  } else {
+    console.error("Unknown error:", e);
+  }
+});
+
 // Установить список команд
-bot.api.setMyCommands(commands);
+// bot.api.setMyCommands(commands);
 
 // bot.on("message", (ctx) => {
 //   const message = ctx.message; // the message object

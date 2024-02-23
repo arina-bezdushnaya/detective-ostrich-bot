@@ -1,9 +1,9 @@
 import { Menu } from "@grammyjs/menu";
 import { EmojiFlavor } from "@grammyjs/emoji";
-import { bot, gamesState } from "../bot";
+import { bot } from "../bot";
 import { games } from "../constants";
-import { Game } from "../game_class";
-import { game, restartGame as restart } from "../utils";
+import { game } from "../utils";
+import { Step } from "../types";
 
 export function play() {
   const playersNumberMenu = new Menu<EmojiFlavor>("players-number-menu")
@@ -12,7 +12,10 @@ export function play() {
       (replyCtx) => {
         replyCtx.reply("Что ж, и такое бывает!");
 
-        game(replyCtx.from?.id).setPlayerNumber(1);
+        const currentGame = game(replyCtx.from?.id);
+        currentGame.setPlayerNumber(1);
+        currentGame.setStep(Step.GAME);
+        console.log(currentGame);
       }
     )
     .row()
@@ -23,7 +26,11 @@ export function play() {
         await replyCtx.reply(
           "Пригласите второго игрока, отправив ему ссылку-приглашение:"
         );
-        game(replyCtx.from?.id).setPlayerNumber(2);
+
+        const currentGame = game(replyCtx.from?.id);
+        currentGame.setPlayerNumber(2);
+        currentGame.setStep(Step.GAME);
+
         console.log(game(replyCtx.from?.id));
 
         replyCtx.reply(
@@ -32,63 +39,34 @@ export function play() {
       }
     );
 
-  // bot.use(playersNumberMenu);
-
   const gamesMenu = new Menu<EmojiFlavor>("game-selection");
-  games.forEach((game) => {
+  games.forEach(({ id, name }) => {
     gamesMenu
-      .text(game.name, async (replyCtx) => {
-        await gamesState.set(replyCtx.from?.id, new Game(game.id));
+      .text(name, async (replyCtx) => {
+        const currentGame = game(replyCtx.from?.id);
+        currentGame.setGameType(id);
+        currentGame.setStep(Step.PLAYERS);
 
         await replyCtx.menu.nav("players-number-menu");
-        replyCtx.editMessageText("Выберите игроков:");
-
-        // await bot.api.sendMessage(
-        //   replyCtx.from?.id,
-        //   "Выберите количество игроков:",
-        //   {
-        //     reply_markup: playersNumberMenu,
-        //   }
-        // );
-
-        // console.log(gamesState);
+        console.log(currentGame);
+        replyCtx.editMessageText("Укажите количество игроков:");
       })
       .row();
   });
 
   bot.use(gamesMenu);
 
-  const restartGame = new Menu<EmojiFlavor>("restart-game")
-    .text("Да", async (replyCtx) => {
-      restart(replyCtx.chat?.id);
-      runInitialStep(replyCtx);
-    })
-    .row()
-    .text("Нет", async (replyCtx) => {
-      // replyCtx.menu.close();
-      // replyCtx.menu.nav("gamesMenu");
-    });
-
-  bot.use(restartGame);
-
   // gamesMenu.submenu("players-number-menu");
   gamesMenu.register(playersNumberMenu);
 
-  function runInitialStep(ctx: any) {
-    console.log(ctx.from?.id);
-    console.log(game(ctx.from?.id));
-
+  function runGame(ctx: any) {
     const currentGame = game(ctx.from?.id);
-    // const title =
-    //   currentGame && currentGame.id ? "Выберите игроков:" : "Выберите игру:";
+    console.log(currentGame);
 
-    const attention = "Игра уже запущена. Сбросить ее и начать заново?";
+    if (!currentGame.id) {
+      currentGame.setStep(Step.GAME_TYPE);
+      console.log(currentGame);
 
-    if (currentGame) {
-      ctx.reply(attention, {
-        reply_markup: restartGame,
-      });
-    } else {
       ctx.reply("Выберите игру:", {
         reply_markup: gamesMenu,
       });
@@ -96,6 +74,6 @@ export function play() {
   }
 
   bot.command("play", async (ctx) => {
-    runInitialStep(ctx);
+    runGame(ctx);
   });
 }
