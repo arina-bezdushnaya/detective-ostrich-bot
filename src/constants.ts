@@ -1,7 +1,7 @@
-import { GameDescription } from "./types";
+import { GameDescription, Command } from "./types";
 
 // Список команд
-export const commands = [
+export const commands: Command[] = [
   {
     command: "play",
     description: "Начать игру",
@@ -15,9 +15,13 @@ export const commands = [
     description: "Правила",
   },
   {
-    command: "games",
-    description: "Список игр",
+    command: "start",
+    description: "Перезапустить Страуса",
   },
+  // {
+  //   command: "games",
+  //   description: "Список игр",
+  // },
 ];
 
 // Список игр

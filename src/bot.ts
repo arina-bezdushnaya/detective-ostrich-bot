@@ -9,9 +9,10 @@ const BOT_TOKEN = process.env.BOT_TOKEN as string;
 //Create a new bot
 export const bot = new Bot<EmojiFlavor>(BOT_TOKEN);
 
-bot.use(emojiParser());
+export const gamesState = new Map();
+console.log(gamesState);
 
-const gamesState = new Map();
+bot.use(emojiParser());
 
 insertCommands();
 

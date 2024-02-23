@@ -11,5 +11,5 @@ export function insertCommands() {
   play();
   start();
   getObjectives();
-  getGameList();
+  // getGameList();
 }

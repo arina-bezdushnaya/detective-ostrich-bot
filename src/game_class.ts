@@ -3,17 +3,26 @@ import { gamesMap } from "./constants";
 export class Game {
   id: string;
   name: string;
+  playersNumber: number;
+  // turn: string;
+  // turnNumber: number;
 
   constructor(id: string) {
     this.id = id;
     this.name = gamesMap.get(id) || "";
-    this.getClues();
+    this.playersNumber = 0;
+    // this.getClues();
   }
 
   getClues() {
     const { clues } = require(`./games/${this.id}`);
     console.log(clues);
 
+    // console.log(`name: ${this.name}  age: ${this.age}`);
+  }
+
+  setPlayerNumber(value: number) {
+    this.playersNumber = value;
     // console.log(`name: ${this.name}  age: ${this.age}`);
   }
 

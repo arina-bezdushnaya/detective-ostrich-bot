@@ -1,6 +1,5 @@
 import { User } from "@grammyjs/types";
 import { bot } from "../bot";
-import { commands } from "../constants";
 
 export function start() {
   // function addPlayer(id: string) {
