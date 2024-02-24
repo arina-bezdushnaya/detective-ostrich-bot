@@ -1,8 +1,8 @@
 import { Menu } from "@grammyjs/menu";
 import { EmojiFlavor } from "@grammyjs/emoji";
-import { bot } from "../bot";
+import { bot, gamesState } from "../bot";
 import { games } from "../constants";
-import { game } from "../utils";
+import { getCurrentGame } from "../utils";
 import { Step } from "../types";
 
 export function play() {
@@ -12,10 +12,10 @@ export function play() {
       (replyCtx) => {
         replyCtx.reply("Что ж, и такое бывает!");
 
-        const currentGame = game(replyCtx.from?.id);
+        const currentGame = getCurrentGame(replyCtx.from?.id);
         currentGame.setPlayerNumber(1);
         currentGame.setStep(Step.GAME);
-        console.log(currentGame);
+        console.log(gamesState);
       }
     )
     .row()
@@ -27,11 +27,11 @@ export function play() {
           "Пригласите второго игрока, отправив ему ссылку-приглашение:"
         );
 
-        const currentGame = game(replyCtx.from?.id);
+        const currentGame = getCurrentGame(replyCtx.from?.id);
         currentGame.setPlayerNumber(2);
         currentGame.setStep(Step.GAME);
 
-        console.log(game(replyCtx.from?.id));
+        console.log(gamesState);
 
         replyCtx.reply(
           `https://t.me/speaking_ostrich_bot?start=${replyCtx.from.id}`
@@ -43,12 +43,12 @@ export function play() {
   games.forEach(({ id, name }) => {
     gamesMenu
       .text(name, async (replyCtx) => {
-        const currentGame = game(replyCtx.from?.id);
+        const currentGame = getCurrentGame(replyCtx.from?.id);
         currentGame.setGameType(id);
         currentGame.setStep(Step.PLAYERS);
 
         await replyCtx.menu.nav("players-number-menu");
-        console.log(currentGame);
+        console.log(gamesState);
         replyCtx.editMessageText("Укажите количество игроков:");
       })
       .row();
@@ -60,13 +60,11 @@ export function play() {
   gamesMenu.register(playersNumberMenu);
 
   function runGame(ctx: any) {
-    const currentGame = game(ctx.from?.id);
-    console.log(currentGame);
+    const currentGame = getCurrentGame(ctx.from?.id);
+    currentGame.setPlayer(ctx.from?.id);
+    console.log(gamesState);
 
     if (!currentGame.id) {
-      currentGame.setStep(Step.GAME_TYPE);
-      console.log(currentGame);
-
       ctx.reply("Выберите игру:", {
         reply_markup: gamesMenu,
       });

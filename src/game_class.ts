@@ -15,6 +15,7 @@ export class Game {
     this.name = "";
     this.playersNumber = 0;
     this.step = Step.GAME_TYPE;
+    this.players = [];
   }
 
   constructor() {
@@ -22,9 +23,11 @@ export class Game {
   }
 
   setPlayer(id: number) {
-    const updatedPLayers = this.players;
-    updatedPLayers.push(id);
-    this.players = updatedPLayers;
+    const currentPlayers = this.players;
+    if (!currentPlayers.includes(id)) {
+      currentPlayers.push(id);
+      this.players = currentPlayers;
+    }
   }
 
   getClues() {

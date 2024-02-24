@@ -1,11 +1,11 @@
 import { gamesState } from "./bot";
 import { Game } from "./game_class";
 
-export const game = (chatId?: number, initialId?: number) => {
+export const getCurrentGame = (chatId?: number, matchId?: number) => {
   const currentGame = (id?: number) => gamesState.get(id);
 
-  if (initialId) {
-    gamesState.set(chatId, currentGame(initialId));
+  if (matchId) {
+    gamesState.set(chatId, currentGame(matchId));
     return currentGame(chatId);
   }
 
