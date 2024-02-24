@@ -17,6 +17,6 @@ export const game = (chatId?: number, initialId?: number) => {
   }
 };
 
-export const restartGame = (chatId?: number) => {
+export const deleteGame = (chatId?: number) => {
   gamesState.delete(chatId);
 };

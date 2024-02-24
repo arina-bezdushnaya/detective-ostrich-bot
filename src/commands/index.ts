@@ -3,7 +3,6 @@ import { getHelp } from "./help";
 import { play } from "./play";
 import { start } from "./start";
 import { getObjectives } from "./objectives";
-import { getGameList } from "./games";
 
 export function insertCommands() {
   getRules();
@@ -11,5 +10,4 @@ export function insertCommands() {
   play();
   start();
   getObjectives();
-  // getGameList();
 }

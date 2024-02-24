@@ -2,7 +2,7 @@ import { User } from "@grammyjs/types";
 import { Menu } from "@grammyjs/menu";
 import { EmojiFlavor } from "@grammyjs/emoji";
 import { bot, gamesState } from "../bot";
-import { game, restartGame } from "../utils";
+import { game } from "../utils";
 
 export function start() {
   // const attention = "Игра уже запущена. Сбросить ее и начать заново?";
@@ -10,9 +10,9 @@ export function start() {
 
   const restartGameMenu = new Menu<EmojiFlavor>("restart-game")
     .text("Да", async (replyCtx) => {
-      restartGame(replyCtx.chat?.id);
       const currentGameToRestart = game(replyCtx.from?.id);
-      currentGameToRestart.setGameType("");
+      currentGameToRestart.restartGame(replyCtx.chat?.id);
+      console.log(currentGameToRestart);
 
       replyCtx.reply("Чтобы начать новую игру, введите  /play");
     })

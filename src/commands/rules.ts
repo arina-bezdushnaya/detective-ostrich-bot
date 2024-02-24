@@ -2,8 +2,6 @@ import { bot } from "../bot";
 
 export function getRules() {
   bot.command("rules", async (ctx) => {
-    // markTaskAsCompleted("rules");
-
     const goal = "<b>Цель игры</b> - Восстановить картину преступления.\n";
     const objectivesText =
       "Каждый игрок получает по <b><i>3 улики (подсказки)</i></b>. \n" +

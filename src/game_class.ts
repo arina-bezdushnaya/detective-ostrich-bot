@@ -2,19 +2,29 @@ import { gamesMap } from "./constants";
 import { Step } from "./types";
 
 export class Game {
-  id: string;
-  name: string;
-  playersNumber: number;
-  step: Step;
+  id!: string;
+  name!: string;
+  playersNumber!: number;
+  step!: Step;
+  players!: number[];
   // turn: string;
   // turnNumber: number;
 
-  constructor() {
+  restartGame() {
     this.id = "";
     this.name = "";
     this.playersNumber = 0;
     this.step = Step.GAME_TYPE;
-    // this.getClues();
+  }
+
+  constructor() {
+    this.restartGame();
+  }
+
+  setPlayer(id: number) {
+    const updatedPLayers = this.players;
+    updatedPLayers.push(id);
+    this.players = updatedPLayers;
   }
 
   getClues() {
@@ -25,10 +35,16 @@ export class Game {
   }
 
   setPlayerNumber(value: number) {
+    if (this.step !== Step.PLAYERS) {
+      return;
+    }
     this.playersNumber = value;
   }
 
   setGameType(id: string) {
+    if (this.step !== Step.GAME_TYPE) {
+      return;
+    }
     this.id = id;
     this.name = gamesMap.get(id) || "";
   }
