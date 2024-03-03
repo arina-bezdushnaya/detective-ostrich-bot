@@ -1,6 +1,7 @@
 import { Bot, GrammyError, HttpError } from "grammy";
 import { EmojiFlavor, emojiParser } from "@grammyjs/emoji";
 import { insertCommands } from "./commands";
+import { Game } from "./game_class";
 require("dotenv").config();
 
 const BOT_TOKEN = process.env.BOT_TOKEN as string;
@@ -8,7 +9,8 @@ const BOT_TOKEN = process.env.BOT_TOKEN as string;
 //Create a new bot
 export const bot = new Bot<EmojiFlavor>(BOT_TOKEN);
 
-export const gamesState = new Map();
+export const gamesState = new Map<string, Game>();
+export const users = new Map<number, string>();
 console.log(gamesState);
 
 bot.use(emojiParser());

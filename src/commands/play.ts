@@ -1,8 +1,8 @@
 import { Menu } from "@grammyjs/menu";
 import { EmojiFlavor } from "@grammyjs/emoji";
-import { bot, gamesState } from "../bot";
+import { bot, gamesState, users } from "../bot";
 import { games } from "../constants";
-import { getCurrentGame } from "../utils";
+import { createNewGame, getCurrentGameState, getCurrentGame } from "../utils";
 import { Step } from "../types";
 
 export function play() {
@@ -10,12 +10,12 @@ export function play() {
     .text(
       async (ctx) => await ctx.emoji`Forever alone ${"loudly_crying_face"}`,
       (replyCtx) => {
+        const { currentGame } = getCurrentGameState(replyCtx);
         replyCtx.reply("Что ж, и такое бывает!");
 
-        const currentGame = getCurrentGame(replyCtx.from?.id);
-        currentGame.setPlayerNumber(1);
-        currentGame.setStep(Step.GAME);
+        currentGame && currentGame.setStep(Step.GAME);
         console.log(gamesState);
+        replyCtx.menu.close();
       }
     )
     .row()
@@ -27,48 +27,61 @@ export function play() {
           "Пригласите второго игрока, отправив ему ссылку-приглашение:"
         );
 
-        const currentGame = getCurrentGame(replyCtx.from?.id);
-        currentGame.setPlayerNumber(2);
-        currentGame.setStep(Step.GAME);
+        const { userId, gameId, currentGame } = getCurrentGameState(replyCtx);
+        console.log(currentGame);
 
-        console.log(gamesState);
+        if (currentGame) {
+          currentGame.setPlayerNumber(2);
+          currentGame.setStep(Step.GAME);
 
-        replyCtx.reply(
-          `https://t.me/speaking_ostrich_bot?start=${replyCtx.from.id}`
-        );
+          console.log(gamesState);
+
+          replyCtx.reply(`https://t.me/speaking_ostrich_bot?start=${gameId}`);
+          replyCtx.menu.close();
+        }
       }
     );
 
   const gamesMenu = new Menu<EmojiFlavor>("game-selection");
+
   games.forEach(({ id, name }) => {
     gamesMenu
       .text(name, async (replyCtx) => {
-        const currentGame = getCurrentGame(replyCtx.from?.id);
-        currentGame.setGameType(id);
-        currentGame.setStep(Step.PLAYERS);
+        const { currentGame } = getCurrentGameState(replyCtx);
 
-        await replyCtx.menu.nav("players-number-menu");
-        console.log(gamesState);
-        replyCtx.editMessageText("Укажите количество игроков:");
+        if (currentGame && currentGame.step === Step.GAME_TYPE) {
+          currentGame.setGameType(id);
+          currentGame.setStep(Step.PLAYERS);
+
+          await replyCtx.menu.nav("players-number-menu");
+          console.log(gamesState);
+          replyCtx.editMessageText("Укажите количество игроков:");
+        }
       })
       .row();
   });
 
   bot.use(gamesMenu);
-
-  // gamesMenu.submenu("players-number-menu");
   gamesMenu.register(playersNumberMenu);
 
   function runGame(ctx: any) {
-    const currentGame = getCurrentGame(ctx.from?.id);
-    currentGame.setPlayer(ctx.from?.id);
-    console.log(gamesState);
+    const { userId, currentGame } = getCurrentGameState(ctx);
 
-    if (!currentGame.id) {
+    if (currentGame) {
+      if (currentGame.step === Step.GAME) {
+        return;
+      }
       ctx.reply("Выберите игру:", {
         reply_markup: gamesMenu,
       });
+    } else {
+      createNewGame(userId);
+      console.log(users);
+
+      runGame(ctx);
     }
+
+    console.log(gamesState);
   }
 
   bot.command("play", async (ctx) => {

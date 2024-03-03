@@ -2,15 +2,15 @@ import { gamesMap } from "./constants";
 import { Step } from "./types";
 
 export class Game {
-  id!: string;
-  name!: string;
-  playersNumber!: number;
-  step!: Step;
-  players!: number[];
+  id: string;
+  name: string;
+  playersNumber: number;
+  step: Step;
+  players: number[];
   // turn: string;
   // turnNumber: number;
 
-  restartGame() {
+  constructor() {
     this.id = "";
     this.name = "";
     this.playersNumber = 0;
@@ -18,23 +18,30 @@ export class Game {
     this.players = [];
   }
 
-  constructor() {
-    this.restartGame();
-  }
-
-  setPlayer(id: number) {
+  changePlayers(id: number, quit: boolean = false) {
     const currentPlayers = this.players;
-    if (!currentPlayers.includes(id)) {
-      currentPlayers.push(id);
-      this.players = currentPlayers;
-    }
+
+    const quitTheGame = () => {
+      const updatedPlayers = currentPlayers.filter(
+        (playerId) => playerId !== id
+      );
+      this.players = updatedPlayers;
+    };
+
+    const addNewPlayer = () => {
+      if (!currentPlayers.includes(id)) {
+        currentPlayers.push(id);
+        this.players = currentPlayers;
+      }
+    };
+
+    quit ? quitTheGame() : addNewPlayer();
+    this.playersNumber = this.players.length;
   }
 
   getClues() {
     const { clues } = require(`./games/${this.id}`);
     console.log(clues);
-
-    // console.log(`name: ${this.name}  age: ${this.age}`);
   }
 
   setPlayerNumber(value: number) {
