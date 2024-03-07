@@ -4,6 +4,7 @@ import { Step } from "./types";
 export class Game {
   id: string;
   name: string;
+  gameOwner: number;
   playersNumber: number;
   step: Step;
   players: number[];
@@ -13,6 +14,7 @@ export class Game {
   constructor() {
     this.id = "";
     this.name = "";
+    this.gameOwner = 0;
     this.playersNumber = 0;
     this.step = Step.GAME_TYPE;
     this.players = [];
@@ -61,6 +63,29 @@ export class Game {
 
   setStep(step: Step) {
     this.step = step;
+  }
+
+  setGameOwner(userId: number) {
+    this.gameOwner = userId;
+  }
+
+  checkPLayers(sendNotification: Function) {
+    if (this.playersNumber === this.players.length) {
+      this.playGame();
+    } else {
+      this.players.map((player) => {
+        const isGameOwner = this.gameOwner === player;
+        sendNotification(player, isGameOwner);
+      });
+    }
+  }
+
+  startGame() {
+    this.setStep(Step.GAME);
+  }
+
+  playGame() {
+    console.log("game is running");
   }
 
   // function initializeTasks() {

@@ -18,5 +18,6 @@ export interface Game {
 export enum Step {
   "GAME_TYPE" = "GAME_TYPE",
   "PLAYERS" = "PLAYERS",
+  "WAITING_FOR_PLAYERS" = "WAITING_FOR_PLAYERS",
   "GAME" = "GAME",
 }

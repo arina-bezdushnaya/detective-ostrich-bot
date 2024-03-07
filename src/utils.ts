@@ -27,6 +27,7 @@ export const createNewGame = (chatId: number) => {
   const newGame = new Game();
   newGame.changePlayers(chatId);
   const gameId = `U${chatId}U${Math.random().toString(16).slice(2)}`;
+  newGame.setGameOwner(chatId);
 
   users.set(chatId, gameId);
   gamesState.set(gameId, newGame);
