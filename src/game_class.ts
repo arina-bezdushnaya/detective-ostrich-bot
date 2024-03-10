@@ -1,5 +1,7 @@
 import { gamesMap } from "./constants";
 import { Step } from "./types";
+import { getUserId } from "./utils/common";
+import { changeKeyboardButtons, sendMessage } from "./utils/tg";
 
 export class Game {
   id: string;
@@ -9,7 +11,8 @@ export class Game {
   step: Step;
   players: number[];
   // turn: string;
-  // turnNumber: number;
+  turnNumber: number;
+  availableClues: string[];
 
   constructor() {
     this.id = "";
@@ -18,6 +21,8 @@ export class Game {
     this.playersNumber = 0;
     this.step = Step.GAME_TYPE;
     this.players = [];
+    this.turnNumber = 0;
+    this.availableClues = [];
   }
 
   changePlayers(id: number, quit: boolean = false) {
@@ -41,10 +46,10 @@ export class Game {
     this.playersNumber = this.players.length;
   }
 
-  getClues() {
-    const { clues } = require(`./games/${this.id}`);
-    console.log(clues);
-  }
+  // getClues() {
+  //   const { clues } = require(`./games/${this.id}`);
+  //   console.log(clues);
+  // }
 
   setPlayerNumber(value: number) {
     if (this.step !== Step.PLAYERS) {
@@ -69,9 +74,9 @@ export class Game {
     this.gameOwner = userId;
   }
 
-  checkPLayers(sendNotification: Function) {
+  checkPLayers(sendNotification: Function, ctx: any) {
     if (this.playersNumber === this.players.length) {
-      this.playGame();
+      this.playGame(ctx);
     } else {
       this.players.map((player) => {
         const isGameOwner = this.gameOwner === player;
@@ -84,8 +89,31 @@ export class Game {
     this.setStep(Step.GAME);
   }
 
-  playGame() {
+  playGame(ctx: any) {
+    const id = getUserId(ctx);
     console.log("game is running");
+
+    const { clues, objectives } = require(`./games/${this.id}`);
+    const initialClue = clues[0];
+
+    this.showInitialSituation(id, initialClue);
+  }
+
+  showInitialSituation(id: number, initialClue: string) {
+    sendMessage(id, `Игра началась!`);
+    this.addClueToAvailable(initialClue);
+
+    const keyboard = changeKeyboardButtons("Подсказки");
+
+    sendMessage(
+      id,
+      `Просмотреть все доступные на текущий момент подсказки, можно нажав кнопку "Подсказки"`,
+      keyboard
+    );
+  }
+
+  addClueToAvailable(clue: string) {
+    this.availableClues.push(clue);
   }
 
   // function initializeTasks() {

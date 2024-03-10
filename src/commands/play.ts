@@ -1,12 +1,16 @@
 import { bot, users } from "../bot";
-import { createNewGame, getCurrentGameState, getCurrentGame } from "../utils";
+import {
+  createNewGame,
+  getCurrentGameState,
+  getCurrentGame,
+} from "../utils/common";
 import { Step } from "../types";
 import {
   playersNumberMenu,
   gamesMenu,
   startGameRightNowMenu,
-  sendNotifIsEverybodyReady,
 } from "../menus/play";
+import { sendNotifIsEverybodyReady } from "../utils/tg";
 
 export function play() {
   bot.use(startGameRightNowMenu);
@@ -18,10 +22,10 @@ export function play() {
 
     switch (currentGame?.step) {
       case Step.WAITING_FOR_PLAYERS:
-        currentGame.checkPLayers(sendNotifIsEverybodyReady(ctx));
+        currentGame.checkPLayers(sendNotifIsEverybodyReady(ctx), ctx);
         return;
       case Step.GAME:
-        currentGame.playGame();
+        currentGame.playGame(ctx);
         return;
       case Step.GAME_TYPE:
         ctx.reply("Выберите игру:", {

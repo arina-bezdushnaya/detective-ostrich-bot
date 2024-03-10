@@ -1,5 +1,5 @@
-import { gamesState, users } from "./bot";
-import { Game } from "./game_class";
+import { gamesState, users } from "../bot";
+import { Game } from "../game_class";
 
 export const getCurrentGame = (gameId?: string) => {
   return gamesState.get(gameId || "");

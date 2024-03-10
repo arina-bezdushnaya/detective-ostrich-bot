@@ -7,7 +7,7 @@ import {
   getCurrentGame,
   addToGame,
   getCurrentGameState,
-} from "../utils";
+} from "../utils/common";
 import { Step } from "../types";
 import { restartGameMenu } from "../menus/start";
 

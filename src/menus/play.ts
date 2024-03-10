@@ -2,8 +2,9 @@ import { Menu } from "@grammyjs/menu";
 import { EmojiFlavor } from "@grammyjs/emoji";
 import { bot, gamesState } from "../bot";
 import { games } from "../constants";
-import { getCurrentGameState } from "../utils";
+import { getCurrentGameState } from "../utils/common";
 import { Step } from "../types";
+import { sendNotifIsEverybodyReady } from "../utils/tg";
 
 export const startGameRightNowMenu = new Menu<EmojiFlavor>("start-game-menu")
   .text("Да", (replyCtx) => {
@@ -16,32 +17,18 @@ export const startGameRightNowMenu = new Menu<EmojiFlavor>("start-game-menu")
     replyCtx.menu.close();
   });
 
-export const sendNotifIsEverybodyReady =
-  (ctx: any) => (userId: number, isGameOwner: boolean) => {
-    if (isGameOwner) {
-      ctx.reply(`Начать игру, не дожидаясь всех приглашенных участников?`, {
-        reply_markup: startGameRightNowMenu,
-      });
-    } else {
-      bot.api.sendMessage(
-        userId,
-        `Ждем, когда все участники присоединятся к игре`
-      );
-    }
-  };
-
 export const playersNumberMenu = new Menu<EmojiFlavor>("players-number-menu")
   .text(
     async (ctx) => await ctx.emoji`Forever alone ${"loudly_crying_face"}`,
-    (replyCtx) => {
+    async (replyCtx) => {
       const { currentGame } = getCurrentGameState(replyCtx);
 
       if (currentGame?.step === Step.PLAYERS) {
-        replyCtx.reply("Что ж, и такое бывает!");
+        await replyCtx.reply("Что ж, и такое бывает!");
 
         currentGame.setStep(Step.GAME);
         console.log(gamesState);
-        currentGame.playGame();
+        currentGame.playGame(replyCtx);
       }
     }
   )
@@ -68,7 +55,7 @@ export const playersNumberMenu = new Menu<EmojiFlavor>("players-number-menu")
           `https://t.me/speaking_ostrich_bot?start=${gameId}`
         );
 
-        currentGame.checkPLayers(sendNotifIsEverybodyReady(replyCtx));
+        currentGame.checkPLayers(sendNotifIsEverybodyReady(replyCtx), replyCtx);
       }
     }
   );

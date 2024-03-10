@@ -1,7 +1,7 @@
 import { Menu } from "@grammyjs/menu";
 import { EmojiFlavor } from "@grammyjs/emoji";
 import { gamesState } from "../bot";
-import { deleteGame, getCurrentGameState } from "../utils";
+import { deleteGame, getCurrentGameState } from "../utils/common";
 
 export const restartGameMenu = new Menu<EmojiFlavor>("restart-game")
   .text("Да", async (replyCtx) => {
