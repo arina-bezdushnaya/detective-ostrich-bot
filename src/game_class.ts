@@ -13,6 +13,8 @@ export class Game {
   // turn: string;
   turnNumber: number;
   availableClues: string[];
+  currentObjective: number;
+  allObjectives: string[];
 
   constructor() {
     this.id = "";
@@ -23,6 +25,8 @@ export class Game {
     this.players = [];
     this.turnNumber = 0;
     this.availableClues = [];
+    this.currentObjective = 0;
+    this.allObjectives = [];
   }
 
   changePlayers(id: number, quit: boolean = false) {
@@ -45,11 +49,6 @@ export class Game {
     quit ? quitTheGame() : addNewPlayer();
     this.playersNumber = this.players.length;
   }
-
-  // getClues() {
-  //   const { clues } = require(`./games/${this.id}`);
-  //   console.log(clues);
-  // }
 
   setPlayerNumber(value: number) {
     if (this.step !== Step.PLAYERS) {
@@ -93,27 +92,52 @@ export class Game {
     const id = getUserId(ctx);
     console.log("game is running");
 
-    const { clues, objectives } = require(`./games/${this.id}`);
-    const initialClue = clues[0];
+    // const { clues, objectives } = require(`./games/${this.id}`);
+    // const initialClue = clues[0];
 
-    this.showInitialSituation(id, initialClue);
+    this.showInitialSituation(id);
   }
 
-  showInitialSituation(id: number, initialClue: string) {
-    sendMessage(id, `Игра началась!`);
+  showInitialSituation(id: number) {
+    sendMessage({ userId: id, text: `Игра началась!` });
+    sendMessage({
+      userId: id,
+      text: `Чтобы узнать текущие задачи игры, введите /objectives`,
+    });
+
+    const clues = this.getClues();
+
+    const initialClue = clues[0];
     this.addClueToAvailable(initialClue);
 
-    const keyboard = changeKeyboardButtons("Подсказки");
+    sendMessage({ userId: id, text: initialClue, parseMode: "HTML" });
 
-    sendMessage(
-      id,
-      `Просмотреть все доступные на текущий момент подсказки, можно нажав кнопку "Подсказки"`,
-      keyboard
-    );
+    // const keyboard = changeKeyboardButtons("Улики");
+
+    // sendMessage(
+    //   id,
+    //   `Просмотреть все доступные на текущий момент улики, можно нажав кнопку "Улики"`,
+    //   keyboard
+    // );
+  }
+
+  getClues() {
+    const { clues } = require(`./games/${this.id}`);
+    return clues;
   }
 
   addClueToAvailable(clue: string) {
     this.availableClues.push(clue);
+  }
+
+  getAllObjectives() {
+    const { objectives } = require(`./games/${this.id}`);
+    console.log(objectives);
+    return objectives;
+  }
+
+  markObjectiveAsDone() {
+    this.currentObjective++;
   }
 
   // function initializeTasks() {

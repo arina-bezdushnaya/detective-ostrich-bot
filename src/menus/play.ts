@@ -24,7 +24,9 @@ export const playersNumberMenu = new Menu<EmojiFlavor>("players-number-menu")
       const { currentGame } = getCurrentGameState(replyCtx);
 
       if (currentGame?.step === Step.PLAYERS) {
-        await replyCtx.reply("Что ж, и такое бывает!");
+        await replyCtx.reply(
+          replyCtx.emoji`Что ж, и такое бывает ${"winking_face"}`
+        );
 
         currentGame.setStep(Step.GAME);
         console.log(gamesState);
