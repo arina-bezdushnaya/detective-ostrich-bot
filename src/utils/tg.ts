@@ -3,6 +3,8 @@ import {startMultiplePlayersGameMenu, startSinglePlayerGameRightNowMenu} from ".
 import {bot} from "../bot";
 import {availableCluesMenu} from "../menus/game";
 import {availableCluesTitle} from "../constants";
+import {getCurrentGameState} from "./common";
+import {Game} from "../game_class";
 
 interface SendMessageParams {
   userId: number;
@@ -19,9 +21,6 @@ interface SendNotifParams {
 
 export const sendNotifIsEverybodyReady = (ctx: any) => {
   return async ({userId, isGameOwner = false, isEverybodyJoin = false}: SendNotifParams) => {
-
-    // const menuCtx = (ctx as unknown as BotContext);
-    // menuCtx.session.turnClues = firstTurnClues;
 
     if (isEverybodyJoin) {
 
@@ -98,5 +97,80 @@ export async function showClues(
   await ctx.reply(availableCluesTitle, {
     reply_markup: availableCluesMenu,
     parse_mode: "HTML"
+  });
+}
+
+
+export function updateSessionClues(
+  ctx: any, selectedClue: number
+) {
+  const {currentGame} = getCurrentGameState(ctx);
+
+  if (currentGame) {
+    const newClue = currentGame.addClueForNextTurn();
+    const currentClues = ctx.session.turnClues
+      .filter((clue: number) => clue !== selectedClue);
+
+    currentClues.push(newClue);
+    ctx.session.turnClues = currentClues;
+  }
+}
+
+
+export async function selectTurnClueHandle(ctx: any, isReset?: boolean) {
+  const {currentGame} = getCurrentGameState(ctx);
+
+  ctx.menu.close();
+  const selectedClue = ctx.session.selectedClue;
+
+  if (currentGame) {
+    const turnNumber = currentGame.turnNumber;
+
+    ctx.editMessageText(
+      `Вы ${isReset ?
+        'избавились от <b>Улики' :
+        'приложили к делу <b>Улику'} ${selectedClue}</b>\n\n` +
+      `<i>Ход ${turnNumber} завершен</i>`,
+      {parse_mode: "HTML"}
+    );
+
+    await currentGame.finishTurn(ctx, selectedClue, isReset);
+    moveToNextTurn(currentGame);
+  }
+}
+
+export function moveToNextTurn(currentGame: Game) {
+  currentGame.players.map((player, index) => {
+    const turnNumber = currentGame.turnNumber;
+
+    if (currentGame.currentPlayer === index) {
+      console.log('отправляем улики, ход', turnNumber);
+      sendMessage({
+        userId: player,
+        text: 'Следующий ход',
+        replyMarkup: attachedToMessageKeyboard([{text: 'Ходить', payload: 'next-turn'}])
+      })
+    } else {
+      sendMessage({
+        userId: player,
+        text: `<b>Ход ${turnNumber}</b>\nПодождите, ходит другой игрок`,
+        parseMode: "HTML"
+      })
+    }
+  });
+}
+
+
+export function notifyPlayersOfNewClue(currentGame: Game) {
+  currentGame.players.map((player, index) => {
+    const keyboard = attachedToMessageKeyboard([
+      {text: "Улики", payload: "available-clues"},
+    ]);
+
+    sendMessage({
+      userId: player,
+      text: 'В деле появились новые улики!',
+      replyMarkup: keyboard
+    })
   });
 }

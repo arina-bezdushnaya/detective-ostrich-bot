@@ -4,6 +4,7 @@ import {EmojiFlavor} from "@grammyjs/emoji";
 
 export interface TurnSessionData {
   turnClues: number[];
+  selectedClue: number;
   avCluesPage: number;
   doneObjectives: number;
 }

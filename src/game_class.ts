@@ -2,8 +2,9 @@ import {gamesMap} from "./constants";
 import {BotContext, Step} from "./types";
 import {getRandomIndex, getUserId} from "./utils/common";
 import {
+  updateSessionClues,
   sendMessage,
-  sendNextButton,
+  sendNextButton, notifyPlayersOfNewClue,
 } from "./utils/tg";
 import {beforeInitialTurnButton} from "./menus/game";
 
@@ -14,11 +15,11 @@ export class Game {
   playersNumber: number;
   step: Step;
   players: number[];
-  userTurn: number;
+  currentPlayer: number;
   turnNumber: number;
   initialTurnClues: Map<number, number[]>;
   remainingClues: Set<number>;
-  availableClues: number[];
+  availableClues: Set<number>;
   resetClues: number[];
   allObjectives: string[];
 
@@ -29,10 +30,10 @@ export class Game {
     this.playersNumber = 0;
     this.step = Step.GAME_TYPE;
     this.players = [];
-    this.userTurn = 0;
+    this.currentPlayer = 0;
     this.turnNumber = 0;
     this.initialTurnClues = new Map();
-    this.availableClues = [];
+    this.availableClues = new Set();
     this.remainingClues = new Set();
     this.resetClues = [];
     this.allObjectives = [];
@@ -63,6 +64,11 @@ export class Game {
     if (this.step === Step.PLAYERS || this.step === Step.WAITING_FOR_PLAYERS) {
       this.playersNumber = value;
     }
+  }
+
+  setCurrentPlayer() {
+    const currentUser = this.currentPlayer + 1;
+    this.currentPlayer = !!this.players[currentUser] ? currentUser : 0;
   }
 
   setGameType(id: string) {
@@ -120,16 +126,12 @@ export class Game {
 
     this.setPlayerNumber(this.players.length);
     this.setStep(Step.GAME);
-
     this.setTurnNumber();
-    this.setTurn(this.players[0]);
 
     const clues = this.getAllClues();
     const cluesKeys = clues.map((clue: string, index: number) => index);
 
     this.remainingClues = new Set(cluesKeys);
-
-    // console.log('remainingClues initial=', this.remainingClues);
 
     this.addClueToAvailable(1);
     // this.addClueToAvailable(2);
@@ -173,7 +175,7 @@ export class Game {
   }
 
   addClueToAvailable(index: number) {
-    this.availableClues.push(index);
+    this.availableClues.add(index);
     this.deleteClueFromRemaining(index);
   }
 
@@ -220,6 +222,17 @@ export class Game {
     return initialCluesMap;
   }
 
+  addClueForNextTurn() {
+    const cluesSet = this.remainingClues;
+    const cluesArr = Array.from(cluesSet);
+    const randomIndex = getRandomIndex(cluesArr);
+
+    const clueKey = cluesArr[randomIndex];
+    this.deleteClueFromRemaining(clueKey);
+    return clueKey;
+  }
+
+
   getAllObjectives() {
     const {objectives} = require(`./games/${this.id}`);
     return objectives;
@@ -229,7 +242,15 @@ export class Game {
     this.turnNumber++;
   };
 
-  setTurn(userId: number) {
-    this.userTurn = userId;
+  async finishTurn(ctx: any, selectedClue: number, isReset?: boolean) {
+    this.setTurnNumber();
+    this.setCurrentPlayer();
+    this.remainingClues.delete(selectedClue);
+
+    isReset ? this.addClueToReset(selectedClue)
+      : this.addClueToAvailable(selectedClue);
+
+    updateSessionClues(ctx, selectedClue);
+    !isReset && notifyPlayersOfNewClue(this);
   };
 }

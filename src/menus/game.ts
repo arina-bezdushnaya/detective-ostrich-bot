@@ -1,20 +1,18 @@
 import {Menu, MenuRange} from "@grammyjs/menu";
-import {EmojiFlavor} from "@grammyjs/emoji";
 import {InputFile, Context} from "grammy";
 import {getCurrentGameState} from "../utils/common";
-import {attachedToMessageKeyboard} from "../utils/tg";
+import {attachedToMessageKeyboard, selectTurnClueHandle} from "../utils/tg";
 import {availableCluesTitle, turnCluesTitle, turnRules} from "../constants";
 import {BotContext, NavigationButton} from "../types";
 
 
-export const beforeInitialTurnButton = new Menu<EmojiFlavor>("initial-objective-done-button").text(
+export const beforeInitialTurnButton = new Menu<BotContext>("initial-objective-done-button").text(
   "Далее",
   async (replyCtx) => {
     replyCtx.menu.close();
 
-    const menuCtx = (replyCtx as unknown as BotContext);
     // const doneObjectives = menuCtx.session.doneObjectives;
-    menuCtx.session.doneObjectives++;
+    replyCtx.session.doneObjectives++;
     // currentGame?.markObjectiveAsDone();
     // console.log(menuCtx.session.doneObjectives);
 
@@ -37,7 +35,7 @@ export function startInitialTurn(ctx: any) {
 
   if (currentGame) {
     const turnNumber = currentGame.turnNumber;
-    const userTurn = currentGame.userTurn;
+    const userTurn = currentGame.players[currentGame.currentPlayer];
 
     if (userId === userTurn) {
       console.log('отправляем улики');
@@ -53,16 +51,15 @@ export function startInitialTurn(ctx: any) {
   }
 }
 
-export const availableCluesMenu = new Menu("available-clues")
+export const availableCluesMenu = new Menu<BotContext>("available-clues")
   .dynamic((ctx) => {
     const {currentGame} = getCurrentGameState(ctx);
-    const range = new MenuRange();
+    const range = new MenuRange<BotContext>();
 
     if (currentGame) {
-      const cluesKeys: number[] = currentGame.availableClues;
+      const cluesKeys: number[] = Array.from(currentGame.availableClues);
 
-      const menuCtx = (ctx as unknown as BotContext);
-      const page = menuCtx.session.avCluesPage;
+      const page = ctx.session.avCluesPage;
       const lastPage = Math.ceil(cluesKeys.length / 2) - 1;
 
       cluesKeys.forEach((clueKey, index) => {
@@ -105,7 +102,7 @@ export const availableCluesMenu = new Menu("available-clues")
         navigationButtons.forEach(({name, action}) => {
           range
             .text(name, async (ctx) => {
-              menuCtx.session.avCluesPage = action;
+              ctx.session.avCluesPage = action;
               ctx.menu.update();
             })
 
@@ -117,18 +114,13 @@ export const availableCluesMenu = new Menu("available-clues")
   });
 
 
-export const availableClueDetails = new Menu("clue-details");
+export const availableClueDetails = new Menu<BotContext>("clue-details");
 availableClueDetails
   .back("Назад", async (ctx) => {
-      // await ctx.menu.nav("available-clues");
-
       if (!!ctx.msg?.text) {
         ctx.editMessageText(availableCluesTitle, {parse_mode: "HTML"});
       } else {
         await ctx.deleteMessage();
-        // await ctx.menu.nav("available-clues");
-        // await ctx.menu.back();
-
         await ctx.reply(availableCluesTitle,
           {reply_markup: availableCluesMenu, parse_mode: "HTML"}
         );
@@ -137,15 +129,13 @@ availableClueDetails
   );
 
 
-export const turnClues = new Menu("clue-choice");
+export const turnClues = new Menu<BotContext>("clue-choice");
 turnClues
   .dynamic((ctx) => {
     const {currentGame} = getCurrentGameState(ctx);
-    const range = new MenuRange();
+    const range = new MenuRange<BotContext>();
 
-    const menuCtx = (ctx as unknown as BotContext);
-    const turnClues = menuCtx.session.turnClues;
-    console.log(turnClues);
+    const turnClues = ctx.session.turnClues;
 
     if (currentGame) {
       turnClues.forEach(clueKey => {
@@ -153,6 +143,8 @@ turnClues
           .text(String(clueKey), async (ctx) => {
             const details = currentGame.getClueText(clueKey);
             await ctx.menu.nav("turn-clue-details");
+
+            ctx.session.selectedClue = clueKey;
 
             const clueText = `<b>Улика ${clueKey}</b> \n${details}`;
             ctx.editMessageText(
@@ -166,32 +158,12 @@ turnClues
     return range;
   });
 
-export const turnClueDetails = new Menu("turn-clue-details");
+export const turnClueDetails = new Menu<BotContext>("turn-clue-details");
 turnClueDetails
-  .text("Приложить к делу", async (ctx) => {
-    // await ctx.menu.nav("available-clues");
-    const {currentGame} = getCurrentGameState(ctx);
-
-    if (currentGame) {
-      const turnNumber = currentGame.turnNumber;
-
-      ctx.editMessageText(
-        turnCluesTitle(turnNumber), {parse_mode: "HTML"});
-    }
-  })
-  .text("Избавиться от улики", async (ctx) => {
-    // await ctx.menu.nav("available-clues");
-
-    const {currentGame} = getCurrentGameState(ctx);
-    const turnNumber = currentGame?.turnNumber || 0;
-
-    ctx.editMessageText(
-      turnCluesTitle(turnNumber), {parse_mode: "HTML"});
-  })
+  .text("Приложить к делу", async (ctx) => await selectTurnClueHandle(ctx))
+  .text("Избавиться от улики", async (ctx) => await selectTurnClueHandle(ctx, true))
   .row()
   .back("Назад", async (ctx) => {
-      // await ctx.menu.nav("available-clues");
-
       const {currentGame} = getCurrentGameState(ctx);
       const turnNumber = currentGame?.turnNumber || 0;
 

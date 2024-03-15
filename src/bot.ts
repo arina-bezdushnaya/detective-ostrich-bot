@@ -6,6 +6,7 @@ import {showClues} from "./utils/tg";
 import {BotContext, Step, TurnSessionData} from "./types";
 import {getCurrentGameState} from "./utils/common";
 import {startGame} from "./menus/play";
+import {startInitialTurn} from "./menus/game";
 
 require("dotenv").config();
 
@@ -19,7 +20,7 @@ export const users = new Map<number, string>();
 console.log(gamesState);
 
 function initial(): TurnSessionData {
-  return {avCluesPage: 0, turnClues: [], doneObjectives: 0};
+  return {avCluesPage: 0, turnClues: [], doneObjectives: 0, selectedClue: 0};
 }
 
 bot.use(session({initial}));
@@ -58,6 +59,11 @@ bot.callbackQuery("available-clues", async (ctx) => {
 
 bot.callbackQuery("start-multiple-game-menu", async (ctx) => {
   startGame(ctx);
+});
+
+bot.callbackQuery("next-turn", async (ctx) => {
+  ctx.deleteMessage();
+  startInitialTurn(ctx);
 });
 
 
