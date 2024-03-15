@@ -1,15 +1,13 @@
-import { User } from "@grammyjs/types";
-import { Menu } from "@grammyjs/menu";
-import { EmojiFlavor } from "@grammyjs/emoji";
-import { bot, gamesState, users } from "../bot";
+import {User} from "@grammyjs/types";
+import {bot, gamesState, users} from "../bot";
 import {
-  deleteGame,
   getCurrentGame,
   addToGame,
   getCurrentGameState,
 } from "../utils/common";
-import { Step } from "../types";
-import { restartGameMenu } from "../menus/start";
+import {Step} from "../types";
+import {restartGameMenu} from "../menus/start";
+import {sendNotifIsEverybodyReady} from "../utils/tg";
 
 export function start() {
   const resetAttempt = "Игра уже запущена. Сбросить ее?";
@@ -19,10 +17,10 @@ export function start() {
 
   bot.command("start", async (ctx) => {
     const gameIdYouInvited = ctx.match;
-    const initiatedId = gameIdYouInvited.split("U")[1];
 
-    const { userId, gameId, currentGame } = getCurrentGameState(ctx);
+    const {userId, gameId, currentGame} = getCurrentGameState(ctx);
     const gameYouInvited = getCurrentGame(gameIdYouInvited);
+    const initiatedId = gameYouInvited?.gameOwner!;
 
     console.log(gamesState);
     console.log("users=", users);
@@ -35,14 +33,16 @@ export function start() {
       addToGame(gameIdYouInvited, userId);
 
       bot.api.sendMessage(
-        ctx.match,
+        initiatedId,
         `Ваш друг @${ctx.from?.username} присоединился к игре`
       );
 
       console.log(gamesState);
 
       await ctx.reply(`@${username} пригласил Вас в игру Детективный страус!`);
-      ctx.reply("Чтобы узнать список доступных команд, введите  /help");
+      await ctx.reply("Чтобы узнать список доступных команд, введите  /help");
+
+      await gameYouInvited?.checkPLayers(sendNotifIsEverybodyReady(ctx), ctx);
     }
 
     async function restartTheGame() {
@@ -58,7 +58,9 @@ export function start() {
       joinTheGame();
     }
 
-    const canYouJoin = gameYouInvited?.step === Step.WAITING_FOR_PLAYERS;
+    const canYouJoin =
+      gameYouInvited?.step === Step.WAITING_FOR_PLAYERS &&
+      gameYouInvited?.playersNumber > gameYouInvited.players.length;
 
     if (currentGame) {
       if (gameIdYouInvited && canYouJoin) {

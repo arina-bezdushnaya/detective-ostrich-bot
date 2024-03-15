@@ -1,5 +1,5 @@
-import { gamesState, users } from "../bot";
-import { Game } from "../game_class";
+import {gamesState, users} from "../bot";
+import {Game} from "../game_class";
 
 export const getCurrentGame = (gameId?: string) => {
   return gamesState.get(gameId || "");
@@ -26,7 +26,7 @@ export const getCurrentGameState = (ctx: any) => {
 export const createNewGame = (chatId: number) => {
   const newGame = new Game();
   newGame.changePlayers(chatId);
-  const gameId = `U${chatId}U${Math.random().toString(16).slice(2)}`;
+  const gameId = Math.random().toString(16).slice(2);
   newGame.setGameOwner(chatId);
 
   users.set(chatId, gameId);
@@ -44,3 +44,5 @@ export const getUserId = (ctx: any) => {
 export const getGameId = (userId: number) => {
   return users.get(userId);
 };
+
+export const getRandomIndex = (arr: any[]) => Math.floor(Math.random() * arr.length);

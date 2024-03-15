@@ -1,28 +1,22 @@
-import { bot } from "../bot";
-import { getCurrentGameState } from "../utils/common";
+import {bot} from "../bot";
+import {getCurrentGameState} from "../utils/common";
 
 export function getObjectives() {
   bot.command("objectives", (ctx) => {
-    const { userId, currentGame } = getCurrentGameState(ctx);
+    const {currentGame} = getCurrentGameState(ctx);
 
     if (currentGame) {
-      const currentObjective = currentGame?.currentObjective;
+      const currentObjective = ctx.session.doneObjectives;
       const allObjectives = currentGame?.getAllObjectives();
 
-      const objectivesToSend = allObjectives
-        .filter((obj: string, index: number) => {
-          if (currentObjective >= index) {
-            if (currentObjective < index) {
-              return `✅ ${obj}`;
-            } else {
-              return obj;
-            }
-          }
-          return;
-        })
-        .join("\n");
+      let objectivesToSend: string[] = allObjectives
+        .filter((obj: string, index: number) => index <= currentObjective)
+        .map((obj: string, index: number) =>
+          index < currentObjective ? `✔ ${obj}` : `       ${obj}`
+        );
+      const objectives: string = objectivesToSend.join("\n");
 
-      ctx.replyWithEmoji`${objectivesToSend}`;
+      ctx.reply(objectives);
     }
   });
 }

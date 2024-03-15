@@ -1,7 +1,11 @@
-import { gamesMap } from "./constants";
-import { Step } from "./types";
-import { getUserId } from "./utils/common";
-import { changeKeyboardButtons, sendMessage } from "./utils/tg";
+import {gamesMap} from "./constants";
+import {BotContext, Step} from "./types";
+import {getRandomIndex, getUserId} from "./utils/common";
+import {
+  sendMessage,
+  sendNextButton,
+} from "./utils/tg";
+import {beforeInitialTurnButton} from "./menus/game";
 
 export class Game {
   id: string;
@@ -10,10 +14,12 @@ export class Game {
   playersNumber: number;
   step: Step;
   players: number[];
-  // turn: string;
+  userTurn: number;
   turnNumber: number;
-  availableClues: string[];
-  currentObjective: number;
+  initialTurnClues: Map<number, number[]>;
+  remainingClues: Set<number>;
+  availableClues: number[];
+  resetClues: number[];
   allObjectives: string[];
 
   constructor() {
@@ -23,9 +29,12 @@ export class Game {
     this.playersNumber = 0;
     this.step = Step.GAME_TYPE;
     this.players = [];
+    this.userTurn = 0;
     this.turnNumber = 0;
+    this.initialTurnClues = new Map();
     this.availableClues = [];
-    this.currentObjective = 0;
+    this.remainingClues = new Set();
+    this.resetClues = [];
     this.allObjectives = [];
   }
 
@@ -51,10 +60,9 @@ export class Game {
   }
 
   setPlayerNumber(value: number) {
-    if (this.step !== Step.PLAYERS) {
-      return;
+    if (this.step === Step.PLAYERS || this.step === Step.WAITING_FOR_PLAYERS) {
+      this.playersNumber = value;
     }
-    this.playersNumber = value;
   }
 
   setGameType(id: string) {
@@ -73,90 +81,155 @@ export class Game {
     this.gameOwner = userId;
   }
 
-  checkPLayers(sendNotification: Function, ctx: any) {
+  async checkPLayers(sendNotification: Function, ctx: any) {
     if (this.playersNumber === this.players.length) {
-      this.playGame(ctx);
+      await this.startMultiplePlayersGame();
+      console.log('начинаем');
+
+      this.players.map((player) => {
+        sendNotification({userId: player, isEverybodyJoin: true});
+      });
     } else {
       this.players.map((player) => {
         const isGameOwner = this.gameOwner === player;
-        sendNotification(player, isGameOwner);
+        sendNotification({userId: player, isGameOwner});
       });
     }
   }
 
-  startGame() {
+  async startOnePlayerGame(ctx: any) {
+    await this.setInitialCommonProperties();
+
+    const initialCluesMap = this.setCluesForInitialTurn();
+    const userInitialClues = initialCluesMap.get(this.players[0]) || [];
+
+    this.showInitialSituation(ctx, userInitialClues);
+  }
+
+  startMultiplePlayersGame() {
+    this.setInitialCommonProperties();
+    this.setCluesForInitialTurn();
+    console.log(" multiplayer initialCluesMap=", this.initialTurnClues);
+
+    console.log(this);
+  }
+
+
+  setInitialCommonProperties() {
+    console.log("set Initial Common Properties");
+
+    this.setPlayerNumber(this.players.length);
     this.setStep(Step.GAME);
+
+    this.setTurnNumber();
+    this.setTurn(this.players[0]);
+
+    const clues = this.getAllClues();
+    const cluesKeys = clues.map((clue: string, index: number) => index);
+
+    this.remainingClues = new Set(cluesKeys);
+
+    // console.log('remainingClues initial=', this.remainingClues);
+
+    this.addClueToAvailable(1);
+    // this.addClueToAvailable(2);
+    // this.addClueToAvailable(3);
+    // this.addClueToAvailable(4);
+    // this.addClueToAvailable(5);
+
+    this.deleteClueFromRemaining(0);
+    this.deleteClueFromRemaining(1);
   }
 
-  playGame(ctx: any) {
-    const id = getUserId(ctx);
-    console.log("game is running");
+  async showInitialSituation(ctx: any, clues: number[]) {
+    const userId = getUserId(ctx);
 
-    // const { clues, objectives } = require(`./games/${this.id}`);
-    // const initialClue = clues[0];
+    const [initialObjective] = this.getAllObjectives();
+    const initialMessage =
+      "Игра началась!\n" +
+      "Начинаем полное загадок и тайн расследование🔎\n\n" +
+      initialObjective;
 
-    this.showInitialSituation(id);
-  }
+    const isReadTheSituation = 'Погрузились в ситуацию? Нажмите "Далее"!';
 
-  showInitialSituation(id: number) {
-    sendMessage({ userId: id, text: `Игра началась!` });
-    sendMessage({
-      userId: id,
-      text: `Чтобы узнать текущие задачи игры, введите /objectives`,
+    const [initialClue] = this.getAllClues();
+    this.setCluesToSessionCtx(ctx, clues);
+
+    await sendMessage({userId, text: initialMessage});
+    await sendMessage({
+      userId,
+      text: initialClue,
+      parseMode: "HTML",
     });
+    await sendNextButton(ctx, isReadTheSituation, beforeInitialTurnButton)
 
-    const clues = this.getClues();
-
-    const initialClue = clues[0];
-    this.addClueToAvailable(initialClue);
-
-    sendMessage({ userId: id, text: initialClue, parseMode: "HTML" });
-
-    // const keyboard = changeKeyboardButtons("Улики");
-
-    // sendMessage(
-    //   id,
-    //   `Просмотреть все доступные на текущий момент улики, можно нажав кнопку "Улики"`,
-    //   keyboard
-    // );
+    console.log(userId, this);
   }
 
-  getClues() {
-    const { clues } = require(`./games/${this.id}`);
+
+  getAllClues() {
+    const {clues} = require(`./games/${this.id}`);
     return clues;
   }
 
-  addClueToAvailable(clue: string) {
-    this.availableClues.push(clue);
+  addClueToAvailable(index: number) {
+    this.availableClues.push(index);
+    this.deleteClueFromRemaining(index);
+  }
+
+  addClueToReset(index: number) {
+    this.resetClues.push(index);
+    this.deleteClueFromRemaining(index);
+  }
+
+  getClueText(index: number) {
+    const clues = this.getAllClues();
+    return clues[index];
+  };
+
+  deleteClueFromRemaining(index: number) {
+    this.remainingClues.delete(index);
+  };
+
+  setCluesToSessionCtx(ctx: any, clues: number[]) {
+    const menuCtx = (ctx as unknown as BotContext);
+    menuCtx.session.turnClues = Array.from(clues);
+    console.log(menuCtx.session.turnClues);
+  }
+
+  setCluesForInitialTurn() {
+    const initialCluesMap = new Map<number, number[]>();
+
+    this.players.forEach(userId => {
+
+      const userCluesForTurn = [0, 0, 0].map(clue => {
+        const cluesSet = this.remainingClues;
+        const cluesArr = Array.from(cluesSet);
+        const randomIndex = getRandomIndex(cluesArr);
+
+        clue = cluesArr[randomIndex];
+        this.deleteClueFromRemaining(clue);
+        return clue;
+      });
+
+      initialCluesMap.set(userId, userCluesForTurn);
+    });
+
+    this.initialTurnClues = initialCluesMap;
+
+    return initialCluesMap;
   }
 
   getAllObjectives() {
-    const { objectives } = require(`./games/${this.id}`);
-    console.log(objectives);
+    const {objectives} = require(`./games/${this.id}`);
     return objectives;
   }
 
-  markObjectiveAsDone() {
-    this.currentObjective++;
-  }
+  setTurnNumber() {
+    this.turnNumber++;
+  };
 
-  // function initializeTasks() {
-  //   const completedTasks = new Map<string, string | boolean>(
-  //     commands.map((command) => [command.command, false])
-  //   );
-  //   completedTasks.set("player1", false);
-  //   completedTasks.set("player2", false);
-
-  //   return completedTasks;
-  // }
-
-  // const completedTasks = initializeTasks();
-
-  // function markTaskAsCompleted(task: string) {
-  //   completedTasks.set(task, true);
-  // }
-
-  //   toString(): string {
-  //     return `${this.name}: ${this.age}`;
-  //   }
+  setTurn(userId: number) {
+    this.userTurn = userId;
+  };
 }

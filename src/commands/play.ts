@@ -1,31 +1,28 @@
-import { bot, users } from "../bot";
+import {bot, users} from "../bot";
 import {
   createNewGame,
   getCurrentGameState,
-  getCurrentGame,
 } from "../utils/common";
-import { Step } from "../types";
+import {Step} from "../types";
 import {
   playersNumberMenu,
   gamesMenu,
-  startGameRightNowMenu,
 } from "../menus/play";
-import { sendNotifIsEverybodyReady } from "../utils/tg";
+import {sendNotifIsEverybodyReady} from "../utils/tg";
+import {useMenus} from "../menus";
 
 export function play() {
-  bot.use(startGameRightNowMenu);
-  bot.use(playersNumberMenu);
-  bot.use(gamesMenu);
+  useMenus();
 
   function runGame(ctx: any) {
-    const { userId, currentGame } = getCurrentGameState(ctx);
+    const {userId, currentGame} = getCurrentGameState(ctx);
 
     switch (currentGame?.step) {
       case Step.WAITING_FOR_PLAYERS:
         currentGame.checkPLayers(sendNotifIsEverybodyReady(ctx), ctx);
         return;
       case Step.GAME:
-        currentGame.playGame(ctx);
+        // currentGame.playGame(ctx);
         return;
       case Step.GAME_TYPE:
         ctx.reply("Выберите игру:", {
