@@ -4,10 +4,10 @@ import {
   getCurrentGame,
   addToGame,
   getCurrentGameState,
-} from "../utils/common";
+  sendNotifIsEverybodyReady
+} from "../utils";
 import {Step} from "../types";
-import {restartGameMenu} from "../menus/start";
-import {sendNotifIsEverybodyReady} from "../utils/tg";
+import {restartGameMenu} from "../menus";
 
 export function start() {
   const resetAttempt = "Игра уже запущена. Сбросить ее?";
@@ -23,8 +23,6 @@ export function start() {
     const initiatedId = gameYouInvited?.gameOwner!;
 
     console.log(gamesState);
-    console.log("users=", users);
-    console.log("gameYouInvited=", gameYouInvited);
 
     async function joinTheGame() {
       const userInvited = await bot.api.getChat(initiatedId);

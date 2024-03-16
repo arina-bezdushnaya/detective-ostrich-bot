@@ -1,12 +1,10 @@
-import {gamesMap} from "./constants";
+import {commonObjectives, gamesMap} from "./constants";
 import {BotContext, Step} from "./types";
-import {getRandomIndex, getUserId} from "./utils/common";
 import {
-  updateSessionClues,
   sendMessage,
-  sendNextButton, notifyPlayersOfNewClue,
-} from "./utils/tg";
-import {beforeInitialTurnButton} from "./menus/game";
+  replyWithButton, getRandomIndex, getUserId, notifyPlayersOfNewClue, updateSessionClues
+} from "./utils";
+import {beforeInitialTurnButton} from "./menus";
 
 export class Game {
   id: string;
@@ -21,7 +19,10 @@ export class Game {
   remainingClues: Set<number>;
   availableClues: Set<number>;
   resetClues: number[];
-  allObjectives: string[];
+  cluesInHands: number;
+  playersReadInitialSit: number;
+  // allObjectives: string[];
+  versions: number;
 
   constructor() {
     this.id = "";
@@ -36,7 +37,10 @@ export class Game {
     this.availableClues = new Set();
     this.remainingClues = new Set();
     this.resetClues = [];
-    this.allObjectives = [];
+    this.cluesInHands = 0;
+    // this.allObjectives = [];
+    this.playersReadInitialSit = 0;
+    this.versions = 0;
   }
 
   changePlayers(id: number, quit: boolean = false) {
@@ -163,11 +167,14 @@ export class Game {
       text: initialClue,
       parseMode: "HTML",
     });
-    await sendNextButton(ctx, isReadTheSituation, beforeInitialTurnButton)
+    await replyWithButton(ctx, isReadTheSituation, beforeInitialTurnButton)
 
     console.log(userId, this);
   }
 
+  setPlayersReadInitialSit() {
+    this.playersReadInitialSit++;
+  }
 
   getAllClues() {
     const {clues} = require(`./games/${this.id}`);
@@ -218,6 +225,7 @@ export class Game {
     });
 
     this.initialTurnClues = initialCluesMap;
+    this.cluesInHands = this.playersNumber * 3;
 
     return initialCluesMap;
   }
@@ -233,13 +241,21 @@ export class Game {
   }
 
 
-  getAllObjectives() {
+  getAllObjectives(): string[] {
     const {objectives} = require(`./games/${this.id}`);
-    return objectives;
+    return [...objectives, ...commonObjectives];
   }
 
   setTurnNumber() {
     this.turnNumber++;
+  };
+
+  setCluesInHands() {
+    this.cluesInHands--;
+  };
+
+  setVersionsNumber() {
+    this.versions++;
   };
 
   async finishTurn(ctx: any, selectedClue: number, isReset?: boolean) {
@@ -252,5 +268,7 @@ export class Game {
 
     updateSessionClues(ctx, selectedClue);
     !isReset && notifyPlayersOfNewClue(this);
-  };
+
+    !ctx.session.turnClues.length && ctx.session.doneObjectives++;
+  }
 }

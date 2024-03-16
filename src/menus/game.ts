@@ -1,55 +1,44 @@
 import {Menu, MenuRange} from "@grammyjs/menu";
 import {InputFile, Context} from "grammy";
-import {getCurrentGameState} from "../utils/common";
-import {attachedToMessageKeyboard, selectTurnClueHandle} from "../utils/tg";
-import {availableCluesTitle, turnCluesTitle, turnRules} from "../constants";
-import {BotContext, NavigationButton} from "../types";
+import {
+  attachedToMessageKeyboard,
+  moveToNextTurn,
+  selectTurnClueHandle,
+  getCurrentGameState,
+} from "../utils";
+import {availableCluesTitle, showAvailableCluesButton, turnCluesTitle, turnRules} from "../constants";
+import {BotContext, NavigationButton, Step} from "../types";
 
 
 export const beforeInitialTurnButton = new Menu<BotContext>("initial-objective-done-button").text(
   "Далее",
   async (replyCtx) => {
     replyCtx.menu.close();
+    const {currentGame} = getCurrentGameState(replyCtx);
 
-    // const doneObjectives = menuCtx.session.doneObjectives;
-    replyCtx.session.doneObjectives++;
-    // currentGame?.markObjectiveAsDone();
-    // console.log(menuCtx.session.doneObjectives);
+    if (currentGame) {
+      currentGame.setPlayersReadInitialSit();
 
-    const keyboard = attachedToMessageKeyboard([
-      {text: "Улики", payload: "available-clues"},
-    ]);
+      currentGame.playersReadInitialSit === currentGame.playersNumber &&
+      currentGame.setStep(Step.GAME);
 
-    await replyCtx.reply(
-      'Ознакомиться со всеми приложенными к делу уликами, можно нажав кнопку "Улики"',
-      {reply_markup: keyboard}
-    );
-    await replyCtx.reply(turnRules);
+      // const doneObjectives = menuCtx.session.doneObjectives;
+      replyCtx.session.doneObjectives++;
+      // currentGame?.markObjectiveAsDone();
+      // console.log(menuCtx.session.doneObjectives);
 
-    startInitialTurn(replyCtx);
+      await replyCtx.reply(
+        'Ознакомиться со всеми приложенными к делу уликами, можно нажав кнопку "Улики"',
+        {reply_markup: attachedToMessageKeyboard(showAvailableCluesButton)}
+      );
+      await replyCtx.reply(turnRules);
+
+
+      moveToNextTurn(replyCtx, true);
+    }
   }
 );
 
-export function startInitialTurn(ctx: any) {
-  const {userId, currentGame} = getCurrentGameState(ctx);
-
-  if (currentGame) {
-    const turnNumber = currentGame.turnNumber;
-    const userTurn = currentGame.players[currentGame.currentPlayer];
-
-    if (userId === userTurn) {
-      console.log('отправляем улики');
-
-      ctx.reply(turnCluesTitle(turnNumber), {
-        reply_markup: turnClues,
-        parse_mode: "HTML"
-      });
-    } else {
-      ctx.reply(`<b>Ход ${turnNumber}</b>\nПодождите, ходит другой игрок`,
-        {parse_mode: "HTML"});
-    }
-  }
-}
 
 export const availableCluesMenu = new Menu<BotContext>("available-clues")
   .dynamic((ctx) => {
@@ -64,20 +53,22 @@ export const availableCluesMenu = new Menu<BotContext>("available-clues")
 
       cluesKeys.forEach((clueKey, index) => {
         if (index <= (page * 2 + 1) && index >= page * 2) {
-          const details = currentGame.getClueText(clueKey);
+          let details: string = currentGame.getClueText(clueKey);
+          const isPicture = details.includes('picture_');
+
+          if (isPicture) {
+            details = details.split('picture_')[1];
+          }
 
           range
             .text(String(clueKey), async (ctx) => {
               await ctx.menu.nav("clue-details");
 
               const clueText = `<b>Улика ${clueKey}</b> \n${details}`;
-              ctx.editMessageText(
-                clueText,
-                {parse_mode: "HTML"});
 
-              if (clueKey === 1) {
+              if (isPicture) {
                 await ctx.replyWithPhoto(
-                  new InputFile(`./src/assets/${currentGame.id}/01.JPG`),
+                  new InputFile(`./src/assets/${currentGame.id}/${clueKey}.JPG`),
                   {
                     caption: clueText,
                     reply_markup: availableClueDetails,
@@ -86,6 +77,10 @@ export const availableCluesMenu = new Menu<BotContext>("available-clues")
                 )
                 await ctx.answerCallbackQuery();
                 await ctx.deleteMessage();
+              } else {
+                ctx.editMessageText(
+                  clueText,
+                  {parse_mode: "HTML"});
               }
             })
             .row();

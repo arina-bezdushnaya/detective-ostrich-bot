@@ -12,6 +12,13 @@ export const addToGame = (gameId: string, chatId: number) => {
   users.set(chatId, gameId);
 };
 
+export const quitTheGame = (ctx: any) => {
+  const {userId, currentGame} = getCurrentGameState(ctx);
+
+  currentGame?.changePlayers(userId, true);
+  users.delete(userId);
+};
+
 export const getCurrentGameState = (ctx: any) => {
   const userId = getUserId(ctx);
   const gameId = getGameId(userId);
@@ -46,3 +53,20 @@ export const getGameId = (userId: number) => {
 };
 
 export const getRandomIndex = (arr: any[]) => Math.floor(Math.random() * arr.length);
+
+export const normalize_count_form = (n: number, arr: string[]) => {
+  n = Math.abs(n) % 100;
+  const n1 = n % 10;
+
+  if (n > 10 && n < 20) {
+    return arr[2];
+  }
+  if (n1 > 1 && n1 < 5) {
+    return arr[1];
+  }
+  if (n1 == 1) {
+    return arr[0];
+  }
+
+  return arr[2];
+}

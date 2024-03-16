@@ -1,12 +1,10 @@
-import {Bot, GrammyError, HttpError, Context, SessionFlavor, session} from "grammy";
+import {Bot, GrammyError, HttpError, session} from "grammy";
 import {emojiParser} from "@grammyjs/emoji";
 import {insertCommands} from "./commands";
 import {Game} from "./game_class";
-import {showClues} from "./utils/tg";
 import {BotContext, Step, TurnSessionData} from "./types";
-import {getCurrentGameState} from "./utils/common";
-import {startGame} from "./menus/play";
-import {startInitialTurn} from "./menus/game";
+import {startGame} from "./menus";
+import {getCurrentGameState, sendTurnClues, showClues, startTest, summarize} from "./utils";
 
 require("dotenv").config();
 
@@ -20,7 +18,13 @@ export const users = new Map<number, string>();
 console.log(gamesState);
 
 function initial(): TurnSessionData {
-  return {avCluesPage: 0, turnClues: [], doneObjectives: 0, selectedClue: 0};
+  return {
+    avCluesPage: 0,
+    turnClues: [],
+    doneObjectives: 0,
+    selectedClue: 0,
+    test: new Map()
+  };
 }
 
 bot.use(session({initial}));
@@ -49,10 +53,14 @@ bot.catch((err) => {
 //   await ctx.answerCallbackQuery(); // remove loading animation
 // });
 
-bot.callbackQuery("available-clues", async (ctx) => {
+bot.callbackQuery("show-available-clues", async (ctx) => {
   const {currentGame} = getCurrentGameState(ctx);
 
-  if (currentGame && currentGame.step === Step.GAME) {
+  if (currentGame && (
+    currentGame.step === Step.GAME ||
+    currentGame.step === Step.CONSTRUCT_VERSION ||
+    currentGame.step === Step.TEST)
+  ) {
     await showClues(ctx);
   }
 });
@@ -62,8 +70,40 @@ bot.callbackQuery("start-multiple-game-menu", async (ctx) => {
 });
 
 bot.callbackQuery("next-turn", async (ctx) => {
-  ctx.deleteMessage();
-  startInitialTurn(ctx);
+  const {currentGame} = getCurrentGameState(ctx);
+
+  if (currentGame && currentGame.step === Step.GAME) {
+    ctx.deleteMessage();
+    sendTurnClues(ctx);
+  }
+});
+
+bot.callbackQuery("version-is-construct", async (ctx) => {
+  const {currentGame} = getCurrentGameState(ctx);
+
+  if (currentGame && currentGame.step === Step.CONSTRUCT_VERSION) {
+    currentGame.setStep(Step.TEST)
+    ctx.editMessageReplyMarkup({
+      reply_markup: {
+        inline_keyboard: []
+      }
+    });
+    summarize(ctx);
+  }
+});
+
+bot.callbackQuery("start-final-test", async (ctx) => {
+  const {currentGame} = getCurrentGameState(ctx);
+
+  if (currentGame && currentGame.step === Step.TEST) {
+    ctx.editMessageReplyMarkup({
+      reply_markup: {
+        inline_keyboard: []
+      }
+    });
+
+    await startTest(ctx);
+  }
 });
 
 

@@ -1,5 +1,5 @@
 import {bot} from "../bot";
-import {getCurrentGameState} from "../utils/common";
+import {getCurrentGameState} from "../utils";
 
 export function getObjectives() {
   bot.command("objectives", (ctx) => {
@@ -7,7 +7,7 @@ export function getObjectives() {
 
     if (currentGame) {
       const currentObjective = ctx.session.doneObjectives;
-      const allObjectives = currentGame?.getAllObjectives();
+      const allObjectives = currentGame.getAllObjectives();
 
       let objectivesToSend: string[] = allObjectives
         .filter((obj: string, index: number) => index <= currentObjective)

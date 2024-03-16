@@ -1,15 +1,14 @@
 import {bot, users} from "../bot";
 import {
   createNewGame,
-  getCurrentGameState,
-} from "../utils/common";
+  getCurrentGameState, sendNotifIsEverybodyReady
+} from "../utils";
 import {Step} from "../types";
 import {
   playersNumberMenu,
   gamesMenu,
-} from "../menus/play";
-import {sendNotifIsEverybodyReady} from "../utils/tg";
-import {useMenus} from "../menus";
+  useMenus
+} from "../menus";
 
 export function play() {
   useMenus();
@@ -21,6 +20,7 @@ export function play() {
       case Step.WAITING_FOR_PLAYERS:
         currentGame.checkPLayers(sendNotifIsEverybodyReady(ctx), ctx);
         return;
+      // todo add other steps
       case Step.GAME:
         // currentGame.playGame(ctx);
         return;

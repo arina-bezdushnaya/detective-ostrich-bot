@@ -2,22 +2,17 @@ import {InlineKeyboard} from "grammy";
 import {Menu} from "@grammyjs/menu";
 import {EmojiFlavor} from "@grammyjs/emoji";
 import {games} from "../constants";
-import {getCurrentGameState} from "../utils/common";
+import {getCurrentGameState, sendNotifIsEverybodyReady} from "../utils";
 import {Step} from "../types";
-import {sendNotifIsEverybodyReady} from "../utils/tg";
 
 export const startGame = (ctx: any) => {
   const {userId, currentGame} = getCurrentGameState(ctx);
   console.log(currentGame);
 
   if (currentGame) {
+    currentGame.setStep(Step.WAITING_FOR_FIRST_TURN);
+
     const userInitialClues = currentGame.initialTurnClues.get(userId) || [];
-
-    // const menuCtx = (ctx as unknown as BotContext);
-    // menuCtx.session.turnClues = userInitialClues;
-
-    // currentGame.setCluesToSessionCtx(ctx, userInitialClues);
-
     const playersNumber = currentGame.players.length;
 
     playersNumber === 1 ?
