@@ -48,6 +48,11 @@ export const getUserId = (ctx: any) => {
   return ctx.from?.id || 0;
 };
 
+export const getUserNumber = (userId: number, players: number[]) => {
+  const index = players.indexOf(userId);
+  return index + 1;
+};
+
 export const getGameId = (userId: number) => {
   return users.get(userId);
 };

@@ -1,10 +1,12 @@
 import {getCurrentGameState} from "./common";
-import {availableCluesTitle, showAvailableCluesButton, turnCluesTitle} from "../constants";
+import {availableCluesTitle, turnCluesTitle} from "../constants";
 import {availableCluesMenu, turnClues} from "../menus";
 import {constructVersion} from "./versions";
 import {Game} from "../game_class";
-import {attachedToMessageKeyboard, sendMessage} from "./tg";
+import {sendMessage} from "./tg";
 import {Step} from "../types";
+import {bot} from "../bot";
+import {InlineKeyboard} from "grammy";
 
 
 export async function showClues(
@@ -42,13 +44,24 @@ export async function selectTurnClueHandle(ctx: any, isReset?: boolean) {
   if (currentGame) {
     const turnNumber = currentGame.turnNumber;
 
-    ctx.editMessageText(
-      `Вы ${isReset ?
-        'избавились от <b>Улики' :
-        'приложили к делу <b>Улику'} ${selectedClue}</b>\n\n` +
-      `<i>Ход ${turnNumber} завершен</i>`,
-      {parse_mode: "HTML"}
-    );
+    if (!!ctx.msg?.text) {
+      ctx.editMessageText(
+        `Вы ${isReset ?
+          'избавились от <b>Улики' :
+          'приложили к делу <b>Улику'} ${selectedClue}</b>\n\n` +
+        `<i>Ход ${turnNumber} завершен</i>`,
+        {parse_mode: "HTML"}
+      );
+    } else {
+      await ctx.deleteMessage();
+      await ctx.reply(
+        `Вы ${isReset ?
+          'избавились от <b>Улики' :
+          'приложили к делу <b>Улику'} ${selectedClue}</b>\n\n` +
+        `<i>Ход ${turnNumber} завершен</i>`,
+        {parse_mode: "HTML"}
+      );
+    }
 
     await currentGame.finishTurn(ctx, selectedClue, isReset);
 
@@ -81,17 +94,19 @@ export function sendTurnClues(ctx: any) {
 export function moveToNextTurn(ctx: any, isInitialTurn?: boolean) {
   const {currentGame} = getCurrentGameState(ctx);
 
+  const nextTurnKeyboard = new InlineKeyboard()
+    .text('Начать ход', 'next-turn');
+
   if (currentGame && currentGame.step === Step.GAME) {
     currentGame.players.map((player, index) => {
       const turnNumber = currentGame.turnNumber;
 
       if (currentGame.currentPlayer === index) {
         console.log('отправляем улики, ход', turnNumber);
-        sendMessage({
-          userId: player,
-          text: isInitialTurn ? 'Сделать первый ход' : 'Следующий ход',
-          replyMarkup: attachedToMessageKeyboard([{text: 'Ходить', payload: 'next-turn'}])
-        })
+
+        bot.api.sendMessage(player, isInitialTurn ? 'Сделать первый ход' : 'Следующий ход', {
+          reply_markup: nextTurnKeyboard,
+        });
       } else {
         sendMessage({
           userId: player,
@@ -103,12 +118,14 @@ export function moveToNextTurn(ctx: any, isInitialTurn?: boolean) {
   }
 }
 
-export function notifyPlayersOfNewClue(currentGame: Game) {
-  currentGame.players.map((player, index) => {
-    sendMessage({
-      userId: player,
-      text: 'В деле появились новые улики!',
-      replyMarkup: attachedToMessageKeyboard(showAvailableCluesButton)
-    })
+export async function notifyPlayersOfNewClue(currentGame: Game) {
+  const availableCluesKeyboard = new InlineKeyboard()
+    .text("Улики", "show-available-clues");
+
+  currentGame.players.map(async (player) => {
+
+    await bot.api.sendMessage(player, 'В деле появились новые улики!', {
+      reply_markup: availableCluesKeyboard,
+    });
   });
 }

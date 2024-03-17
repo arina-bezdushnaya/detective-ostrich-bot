@@ -21,8 +21,8 @@ export class Game {
   resetClues: number[];
   cluesInHands: number;
   playersReadInitialSit: number;
-  // allObjectives: string[];
-  versions: number;
+  versions: Map<number, string>;
+  passTestPlayers: number;
 
   constructor() {
     this.id = "";
@@ -38,9 +38,9 @@ export class Game {
     this.remainingClues = new Set();
     this.resetClues = [];
     this.cluesInHands = 0;
-    // this.allObjectives = [];
     this.playersReadInitialSit = 0;
-    this.versions = 0;
+    this.versions = new Map();
+    this.passTestPlayers = 0;
   }
 
   changePlayers(id: number, quit: boolean = false) {
@@ -119,8 +119,6 @@ export class Game {
   startMultiplePlayersGame() {
     this.setInitialCommonProperties();
     this.setCluesForInitialTurn();
-    console.log(" multiplayer initialCluesMap=", this.initialTurnClues);
-
     console.log(this);
   }
 
@@ -138,11 +136,6 @@ export class Game {
     this.remainingClues = new Set(cluesKeys);
 
     this.addClueToAvailable(1);
-    // this.addClueToAvailable(2);
-    // this.addClueToAvailable(3);
-    // this.addClueToAvailable(4);
-    // this.addClueToAvailable(5);
-
     this.deleteClueFromRemaining(0);
     this.deleteClueFromRemaining(1);
   }
@@ -254,8 +247,12 @@ export class Game {
     this.cluesInHands--;
   };
 
-  setVersionsNumber() {
-    this.versions++;
+  addPlayerVersion(userId: number, version: string) {
+    this.versions.set(userId, version);
+  };
+
+  addPassTestPlayer() {
+    this.passTestPlayers++;
   };
 
   async finishTurn(ctx: any, selectedClue: number, isReset?: boolean) {
@@ -267,7 +264,7 @@ export class Game {
       : this.addClueToAvailable(selectedClue);
 
     updateSessionClues(ctx, selectedClue);
-    !isReset && notifyPlayersOfNewClue(this);
+    !isReset && await notifyPlayersOfNewClue(this);
 
     !ctx.session.turnClues.length && ctx.session.doneObjectives++;
   }

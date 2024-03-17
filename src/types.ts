@@ -7,7 +7,7 @@ export interface TurnSessionData {
   selectedClue: number;
   avCluesPage: number;
   doneObjectives: number;
-  test: Map<number, string>;
+  test: string[];
 }
 
 export type BotContext = Context & SessionFlavor<TurnSessionData> & EmojiFlavor;
@@ -29,7 +29,7 @@ export enum Step {
   "GAME" = "GAME",
   "WAITING_FOR_FIRST_TURN" = "WAITING_FOR_FIRST_TURN",
   "CONSTRUCT_VERSION" = "CONSTRUCT_VERSION",
-  "TEST" = "TEST"
+  "ALL_PASS_TEST" = "ALL_PASS_TEST"
 }
 
 export interface NavigationButton {

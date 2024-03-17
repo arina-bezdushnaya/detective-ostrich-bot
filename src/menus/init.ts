@@ -7,9 +7,10 @@ import {
   beforeInitialTurnButton,
 } from "./game";
 import {startSinglePlayerGameRightNowMenu, playersNumberMenu, gamesMenu} from "./play";
-import {finalTest} from "./test";
+import {finalTest, showTestAnswers} from "./test";
 
 export function useMenus() {
+  bot.use(showTestAnswers);
   bot.use(finalTest);
 
   bot.use(turnClues);

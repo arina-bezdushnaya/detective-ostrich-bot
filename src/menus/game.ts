@@ -22,10 +22,7 @@ export const beforeInitialTurnButton = new Menu<BotContext>("initial-objective-d
       currentGame.playersReadInitialSit === currentGame.playersNumber &&
       currentGame.setStep(Step.GAME);
 
-      // const doneObjectives = menuCtx.session.doneObjectives;
       replyCtx.session.doneObjectives++;
-      // currentGame?.markObjectiveAsDone();
-      // console.log(menuCtx.session.doneObjectives);
 
       await replyCtx.reply(
         'Ознакомиться со всеми приложенными к делу уликами, можно нажав кнопку "Улики"',
@@ -47,12 +44,11 @@ export const availableCluesMenu = new Menu<BotContext>("available-clues")
 
     if (currentGame) {
       const cluesKeys: number[] = Array.from(currentGame.availableClues);
-
       const page = ctx.session.avCluesPage;
-      const lastPage = Math.ceil(cluesKeys.length / 2) - 1;
+      const lastPage = Math.ceil(cluesKeys.length / 4) - 1;
 
       cluesKeys.forEach((clueKey, index) => {
-        if (index <= (page * 2 + 1) && index >= page * 2) {
+        if (index < (4 * page + 4) && index >= page * 4) {
           let details: string = currentGame.getClueText(clueKey);
           const isPicture = details.includes('picture_');
 
@@ -68,7 +64,7 @@ export const availableCluesMenu = new Menu<BotContext>("available-clues")
 
               if (isPicture) {
                 await ctx.replyWithPhoto(
-                  new InputFile(`./src/assets/${currentGame.id}/${clueKey}.JPG`),
+                  new InputFile(`./src/assets/${currentGame.id}/${clueKey}.jpg`),
                   {
                     caption: clueText,
                     reply_markup: availableClueDetails,
@@ -93,7 +89,7 @@ export const availableCluesMenu = new Menu<BotContext>("available-clues")
         ...(page < lastPage ? [{name: 'Вперед', action: page + 1}] : []),
       ];
 
-      if (cluesKeys.length > 2) {
+      if (cluesKeys.length > 4) {
         navigationButtons.forEach(({name, action}) => {
           range
             .text(name, async (ctx) => {
@@ -134,17 +130,36 @@ turnClues
 
     if (currentGame) {
       turnClues.forEach(clueKey => {
+        let details = currentGame.getClueText(clueKey);
+        const isPicture = details.includes('picture_');
+
+        if (isPicture) {
+          details = details.split('picture_')[1];
+        }
+
         range
           .text(String(clueKey), async (ctx) => {
-            const details = currentGame.getClueText(clueKey);
             await ctx.menu.nav("turn-clue-details");
-
             ctx.session.selectedClue = clueKey;
 
             const clueText = `<b>Улика ${clueKey}</b> \n${details}`;
-            ctx.editMessageText(
-              clueText,
-              {parse_mode: "HTML"});
+
+            if (isPicture) {
+              await ctx.replyWithPhoto(
+                new InputFile(`./src/assets/${currentGame.id}/${clueKey}.jpg`),
+                {
+                  caption: clueText,
+                  reply_markup: turnClueDetails,
+                  parse_mode: "HTML"
+                }
+              )
+              await ctx.answerCallbackQuery();
+              await ctx.deleteMessage();
+            } else {
+              ctx.editMessageText(
+                clueText,
+                {parse_mode: "HTML"});
+            }
           })
           .row()
       })
@@ -162,6 +177,13 @@ turnClueDetails
       const {currentGame} = getCurrentGameState(ctx);
       const turnNumber = currentGame?.turnNumber || 0;
 
-      ctx.editMessageText(turnCluesTitle(turnNumber), {parse_mode: "HTML"});
+      if (!!ctx.msg?.text) {
+        ctx.editMessageText(turnCluesTitle(turnNumber), {parse_mode: "HTML"});
+      } else {
+        await ctx.deleteMessage();
+        await ctx.reply(turnCluesTitle(turnNumber),
+          {reply_markup: turnClues, parse_mode: "HTML"}
+        );
+      }
     }
   );

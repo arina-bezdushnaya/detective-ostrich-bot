@@ -25,7 +25,11 @@ export const startGame = (ctx: any) => {
 
 export const startSinglePlayerGameRightNowMenu = new Menu<EmojiFlavor>("start-single-game-menu")
   .text("Начать", (replyCtx) => {
-    startGame(replyCtx);
+    const {currentGame} = getCurrentGameState(replyCtx);
+
+    if (currentGame && currentGame.step === Step.WAITING_FOR_PLAYERS) {
+      startGame(replyCtx);
+    }
 
     replyCtx.menu.close();
   });

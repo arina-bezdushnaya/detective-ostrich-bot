@@ -1,4 +1,4 @@
-import {getCurrentGameState} from "./common";
+import {getCurrentGameState, getUserNumber} from "./common";
 import {Step} from "../types";
 import {takeTest} from "./test";
 import {attachedToMessageKeyboard, sendMessage} from "./tg";
@@ -11,7 +11,7 @@ export function constructVersion(ctx: any) {
 
     currentGame.players.map(player => {
       const keyboard = attachedToMessageKeyboard([
-        {text: "Далее", payload: "version-is-construct"},
+        {text: "Далее", payload: "version-is-construct-single-player"},
       ]);
 
       sendMessage({
@@ -20,20 +20,73 @@ export function constructVersion(ctx: any) {
           `И пока детективный страус ведет подсчет улик, ` +
           `выстройте свою версию случившегося\n\n` +
           `${currentGame.players.length > 1 ?
-            'Напишите Страусу в одном сообщении факты, которыми Вы хотите поделиться с друзьями. Он обязательно передаст'
+            'Напишите Страусу в одном сообщении важные факты, которыми Вы хотите поделиться с друзьями. ' +
+            'Это поможет раследованию'
             : 'Нажмите "Далее", если версия готова'}`,
         ...(currentGame.players.length === 1 && {replyMarkup: keyboard})
-      }).then(ctx => console.log(ctx));
+      });
     });
   }
 }
 
 
 export function summarize(ctx: any) {
+  const {userId, currentGame} = getCurrentGameState(ctx);
+
+  if (currentGame) {
+    const playersNumber = currentGame.playersNumber;
+    currentGame.addPlayerVersion(userId, ctx.message?.text || '');
+
+    if (playersNumber === 1) {
+      ctx.editMessageReplyMarkup({
+        reply_markup: {
+          inline_keyboard: []
+        }
+      });
+
+      takeTest(ctx);
+    }
+
+    if (currentGame.versions.size === playersNumber && playersNumber > 1) {
+      checkOutVersions(ctx);
+    }
+  }
+}
+
+export function checkOutVersions(ctx: any) {
   const {currentGame} = getCurrentGameState(ctx);
 
   if (currentGame) {
-    currentGame.setVersionsNumber();
-    currentGame.versions === currentGame.playersNumber && takeTest(ctx);
+    const players = currentGame.players;
+
+    currentGame.players.map(player => {
+      const keyboard = attachedToMessageKeyboard([
+        {text: "Далее", payload: "check-out-versions-multiple-players"},
+      ]);
+
+      let otherVersions: string = '';
+      currentGame.versions.forEach((value, key, map) => {
+        if (player !== key) {
+          otherVersions += 'Игрок ' + getUserNumber(key, players) + ` : ` + value + '\n';
+        }
+      });
+
+      const fullMessage = otherVersions + '\n\n' +
+        'Если ознакомились с важными фактами, нажмите "Далее"!';
+
+      sendMessage({
+        userId: player,
+        text: fullMessage,
+        replyMarkup: keyboard
+      });
+    });
+  }
+}
+
+export async function constructVersionHandle(ctx: any) {
+  const {currentGame} = getCurrentGameState(ctx);
+
+  if (currentGame && currentGame.step === Step.CONSTRUCT_VERSION) {
+    summarize(ctx);
   }
 }

@@ -4,7 +4,14 @@ import {insertCommands} from "./commands";
 import {Game} from "./game_class";
 import {BotContext, Step, TurnSessionData} from "./types";
 import {startGame} from "./menus";
-import {getCurrentGameState, sendTurnClues, showClues, startTest, summarize} from "./utils";
+import {
+  constructVersionHandle,
+  getCurrentGameState,
+  sendTurnClues,
+  showClues,
+  startTest,
+  takeTest
+} from "./utils";
 
 require("dotenv").config();
 
@@ -23,7 +30,7 @@ function initial(): TurnSessionData {
     turnClues: [],
     doneObjectives: 0,
     selectedClue: 0,
-    test: new Map()
+    test: []
   };
 }
 
@@ -49,17 +56,18 @@ bot.catch((err) => {
 });
 
 // bot.on("callback_query:data", async (ctx) => {
-//   console.log("Unknown button event with payload", ctx.callbackQuery.data);
-//   await ctx.answerCallbackQuery(); // remove loading animation
+// console.log("Unknown button event with payload", ctx.callbackQuery.data);
+// await ctx.answerCallbackQuery(ctx.callbackQuery.id, { text: 'hey answer', show_alert: true }); // remove loading animation
 // });
 
 bot.callbackQuery("show-available-clues", async (ctx) => {
   const {currentGame} = getCurrentGameState(ctx);
+  await ctx.answerCallbackQuery();
 
   if (currentGame && (
     currentGame.step === Step.GAME ||
     currentGame.step === Step.CONSTRUCT_VERSION ||
-    currentGame.step === Step.TEST)
+    currentGame.step === Step.ALL_PASS_TEST)
   ) {
     await showClues(ctx);
   }
@@ -71,6 +79,7 @@ bot.callbackQuery("start-multiple-game-menu", async (ctx) => {
 
 bot.callbackQuery("next-turn", async (ctx) => {
   const {currentGame} = getCurrentGameState(ctx);
+  await bot.api.answerCallbackQuery(ctx.callbackQuery.id);
 
   if (currentGame && currentGame.step === Step.GAME) {
     ctx.deleteMessage();
@@ -78,24 +87,27 @@ bot.callbackQuery("next-turn", async (ctx) => {
   }
 });
 
-bot.callbackQuery("version-is-construct", async (ctx) => {
-  const {currentGame} = getCurrentGameState(ctx);
+bot.callbackQuery("version-is-construct-single-player", constructVersionHandle);
+bot.on('message', constructVersionHandle);
 
-  if (currentGame && currentGame.step === Step.CONSTRUCT_VERSION) {
-    currentGame.setStep(Step.TEST)
-    ctx.editMessageReplyMarkup({
-      reply_markup: {
-        inline_keyboard: []
-      }
-    });
-    summarize(ctx);
+bot.callbackQuery("check-out-versions-multiple-players", async (ctx) => {
+    const {currentGame} = getCurrentGameState(ctx);
+    console.log('check-out-versions-multiple-players');
+
+    if (currentGame && currentGame.step === Step.CONSTRUCT_VERSION) {
+      takeTest(ctx);
+    }
   }
-});
+);
+
 
 bot.callbackQuery("start-final-test", async (ctx) => {
   const {currentGame} = getCurrentGameState(ctx);
 
-  if (currentGame && currentGame.step === Step.TEST) {
+  if (currentGame && currentGame.step === Step.CONSTRUCT_VERSION) {
+    currentGame.addPassTestPlayer();
+    currentGame.passTestPlayers === currentGame.playersNumber && currentGame.setStep(Step.ALL_PASS_TEST);
+
     ctx.editMessageReplyMarkup({
       reply_markup: {
         inline_keyboard: []

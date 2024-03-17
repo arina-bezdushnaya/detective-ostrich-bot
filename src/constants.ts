@@ -44,3 +44,4 @@ export const turnRules = "В свой ход необходимо ознаком
   "либо избавиться от самой незначительной улики";
 
 export const showAvailableCluesButton: ButtonProps[] = [{text: "Улики", payload: "show-available-clues"}];
+export const testVariants = ['а', 'б', 'в', 'г'];
