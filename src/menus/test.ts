@@ -1,5 +1,5 @@
 import {Menu, MenuRange} from "@grammyjs/menu";
-import {getCurrentGameState, normalize_count_form} from "../utils";
+import {getCharacters, getCurrentGameState, normalize_count_form} from "../utils";
 import {BotContext, TestQuestion} from "../types";
 import {testVariants} from "../constants";
 
@@ -64,7 +64,8 @@ export const showTestAnswers = new Menu<BotContext>("true-game-result")
       const resetCluesText = resetClues < 6 ?
         '\n\nНо Вы избавились менее чем от 6 улик. А это значит, вычитаем 3 балла ' +
         'за каждую недостающую улику\n\n' : '';
-// todo add results, who are you
+      const character = `Вы - ` + getCharacters(totalPoints) + '!';
+
       const messageText: string =
         // 'Ваши ответы: \n' + playerAnswer + '\n\n' +
         // 'Правильные ответы: \n' + trueAnswers + '\n\n' +
@@ -72,7 +73,7 @@ export const showTestAnswers = new Menu<BotContext>("true-game-result")
         normalize_count_form(truePlayersAnswersPoints, ['балл', 'балла', 'баллов']) + '!' +
         resetCluesText +
         `Итог игры: <b>${totalPoints}</b> ${normalize_count_form(
-          totalPoints, ['балл', 'балла', 'баллов'])}!`;
+          totalPoints, ['балл', 'балла', 'баллов'])} \n` + character;
 
       await ctx.reply(messageText,
         {

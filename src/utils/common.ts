@@ -1,5 +1,6 @@
 import {gamesState, users} from "../bot";
 import {Game} from "../game_class";
+import {characters} from "../constants";
 
 export const getCurrentGame = (gameId?: string) => {
   return gamesState.get(gameId || "");
@@ -75,3 +76,17 @@ export const normalize_count_form = (n: number, arr: string[]) => {
 
   return arr[2];
 }
+
+export const getCharacters = (points: number) => {
+  if (points < 7) {
+    return characters[0]
+  } else if (points >= 7 && points < 11) {
+    return characters[1]
+  } else if (points < 15 && points >= 11) {
+    return characters[2]
+  } else if (points < 18 && points >= 15) {
+    return characters[3]
+  } else {
+    return characters[4];
+  }
+};

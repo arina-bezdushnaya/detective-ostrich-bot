@@ -45,3 +45,11 @@ export const turnRules = "В свой ход необходимо ознаком
 
 export const showAvailableCluesButton: ButtonProps[] = [{text: "Улики", payload: "show-available-clues"}];
 export const testVariants = ['а', 'б', 'в', 'г'];
+
+export const characters = [
+  'Миссис Хадсон',
+  'Инспектор Лестрейд',
+  'Доктор Ватсон',
+  'Майкрофт Холмс',
+  'Шерлок Холмс'
+];

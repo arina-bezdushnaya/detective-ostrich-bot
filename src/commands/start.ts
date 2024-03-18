@@ -37,7 +37,7 @@ export function start() {
 
       console.log(gamesState);
 
-      await ctx.reply(`@${username} пригласил Вас в игру Детективный страус!`);
+      await ctx.reply(`@${username} пригласил Вас в игру ${gameYouInvited.name}!`);
       await ctx.reply("Чтобы узнать список доступных команд, введите  /help");
 
       await gameYouInvited?.checkPLayers(sendNotifIsEverybodyReady(ctx), ctx);
