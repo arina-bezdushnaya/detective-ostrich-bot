@@ -37,7 +37,7 @@ export function start() {
 
       console.log(gamesState);
 
-      await ctx.reply(`@${username} пригласил Вас в игру ${gameYouInvited.name}!`);
+      await ctx.reply(`@${username} пригласил Вас в игру ${gameYouInvited?.name}!`);
       await ctx.reply("Чтобы узнать список доступных команд, введите  /help");
 
       await gameYouInvited?.checkPLayers(sendNotifIsEverybodyReady(ctx), ctx);
@@ -47,7 +47,7 @@ export function start() {
       const isSeveralPlayers = currentGame!.players.length > 1;
 
       await ctx.reply(isSeveralPlayers ? quitAttempt : resetAttempt, {
-        reply_markup: restartGameMenu,
+        reply_markup: restartGameMenu
       });
     }
 

@@ -17,6 +17,8 @@ export function getObjectives() {
       const objectives: string = objectivesToSend.join("\n");
 
       ctx.reply(objectives);
+    } else {
+      ctx.reply('Начните игру, введя /play');
     }
   });
 }

@@ -41,8 +41,11 @@ export const createNewGame = (chatId: number) => {
   gamesState.set(gameId, newGame);
 };
 
-export const deleteGame = (gameId: string) => {
-  gamesState.delete(gameId);
+export const deleteGame = (ctx: any) => {
+  const {userId, gameId} = getCurrentGameState(ctx);
+
+  gamesState.delete(gameId as string);
+  users.delete(userId);
 };
 
 export const getUserId = (ctx: any) => {
@@ -78,15 +81,20 @@ export const normalize_count_form = (n: number, arr: string[]) => {
 }
 
 export const getCharacters = (points: number) => {
+
+  const getDescription = (character: string[]) => {
+    return character[0] + `\n` + character[1];
+  }
+
   if (points < 7) {
-    return characters[0]
+    return getDescription(characters[0]);
   } else if (points >= 7 && points < 11) {
-    return characters[1]
+    return getDescription(characters[1]);
   } else if (points < 15 && points >= 11) {
-    return characters[2]
+    return getDescription(characters[2]);
   } else if (points < 18 && points >= 15) {
-    return characters[3]
+    return getDescription(characters[3]);
   } else {
-    return characters[4];
+    return getDescription(characters[4]);
   }
 };

@@ -92,7 +92,6 @@ bot.on('message', constructVersionHandle);
 
 bot.callbackQuery("check-out-versions-multiple-players", async (ctx) => {
     const {currentGame} = getCurrentGameState(ctx);
-    console.log('check-out-versions-multiple-players');
 
     if (currentGame && currentGame.step === Step.CONSTRUCT_VERSION) {
       takeTest(ctx);

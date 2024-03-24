@@ -11,7 +11,7 @@ export const restartGameMenu = new Menu<EmojiFlavor>("restart-game")
 
       isSeveralPlayers
         ? quitTheGame(replyCtx)
-        : deleteGame(gameId);
+        : deleteGame(replyCtx);
 
       replyCtx.menu.close();
       await replyCtx.editMessageText("Чтобы начать новую игру, введите  /play");

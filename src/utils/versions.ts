@@ -36,6 +36,7 @@ export function summarize(ctx: any) {
   if (currentGame) {
     const playersNumber = currentGame.playersNumber;
     currentGame.addPlayerVersion(userId, ctx.message?.text || '');
+    ctx.session.doneObjectives++;
 
     if (playersNumber === 1) {
       ctx.editMessageReplyMarkup({

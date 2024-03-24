@@ -1,5 +1,5 @@
-import {Menu, MenuRange} from "@grammyjs/menu";
-import {getCharacters, getCurrentGameState, normalize_count_form} from "../utils";
+import {Menu} from "@grammyjs/menu";
+import {deleteGame, getCharacters, getCurrentGameState, normalize_count_form, quitTheGame} from "../utils";
 import {BotContext, TestQuestion} from "../types";
 import {testVariants} from "../constants";
 
@@ -26,8 +26,7 @@ testVariants.forEach((answer, index) => {
           await ctx.editMessageText('Приступаем к подведению итогов!');
           ctx.session.doneObjectives++;
 
-          await ctx.reply('<b>Что произошло на самом деле:</b>\n\n' + trueVersion,
-            {
+          await ctx.reply('<b>Что произошло на самом деле:</b>\n\n' + trueVersion, {
               reply_markup: showTestAnswers,
               parse_mode: "HTML"
             }
@@ -62,23 +61,31 @@ export const showTestAnswers = new Menu<BotContext>("true-game-result")
       totalPoints = totalPoints < 0 ? 0 : totalPoints;
 
       const resetCluesText = resetClues < 6 ?
-        '\n\nНо Вы избавились менее чем от 6 улик. А это значит, вычитаем 3 балла ' +
+        '\nНо Вы избавились менее чем от 6 улик. А это значит, вычитаем 3 балла ' +
         'за каждую недостающую улику\n\n' : '';
-      const character = `Вы - ` + getCharacters(totalPoints) + '!';
+      const character = getCharacters(totalPoints);
 
       const messageText: string =
         // 'Ваши ответы: \n' + playerAnswer + '\n\n' +
         // 'Правильные ответы: \n' + trueAnswers + '\n\n' +
         `Так как каждый верный ответ приносит 2 балла, Вы получаете \n<b>${truePlayersAnswersPoints}</b> ` +
-        normalize_count_form(truePlayersAnswersPoints, ['балл', 'балла', 'баллов']) + '!' +
+        normalize_count_form(truePlayersAnswersPoints, ['балл', 'балла', 'баллов']) + '!\n' +
         resetCluesText +
         `Итог игры: <b>${totalPoints}</b> ${normalize_count_form(
-          totalPoints, ['балл', 'балла', 'баллов'])} \n` + character;
+          totalPoints, ['балл', 'балла', 'баллов'])} \n` + `Вы - ` + character;
 
       await ctx.reply(messageText,
         {
           parse_mode: "HTML"
         }
       );
+
+      const isSeveralPlayers = currentGame.players.length > 1;
+
+      isSeveralPlayers
+        ? quitTheGame(ctx)
+        : deleteGame(ctx);
+
+      ctx.session.doneObjectives = 0;
     }
   });
