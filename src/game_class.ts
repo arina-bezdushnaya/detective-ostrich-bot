@@ -109,7 +109,6 @@ export class Game {
 
   async startOnePlayerGame(ctx: any) {
     await this.setInitialCommonProperties();
-
     const initialCluesMap = this.setCluesForInitialTurn();
     const userInitialClues = initialCluesMap.get(this.players[0]) || [];
 
@@ -126,7 +125,7 @@ export class Game {
   setInitialCommonProperties() {
     console.log("set Initial Common Properties");
 
-    this.setPlayerNumber(this.players.length);
+    this.playersNumber = this.players.length;
     this.setStep(Step.GAME);
     this.setTurnNumber();
 
@@ -196,29 +195,28 @@ export class Game {
   setCluesToSessionCtx(ctx: any, clues: number[]) {
     const menuCtx = (ctx as unknown as BotContext);
     menuCtx.session.turnClues = Array.from(clues);
-    console.log(menuCtx.session.turnClues);
   }
 
   setCluesForInitialTurn() {
     const initialCluesMap = new Map<number, number[]>();
+    const playerCardsNumber = this.playersNumber === 1 ? 6 : 3;
 
     this.players.forEach(userId => {
-
-      const userCluesForTurn = [0, 0, 0].map(clue => {
+      const userCluesForTurn = [];
+      for (let i = 0; i <= playerCardsNumber - 1; i++) {
         const cluesSet = this.remainingClues;
         const cluesArr = Array.from(cluesSet);
         const randomIndex = getRandomIndex(cluesArr);
 
-        clue = cluesArr[randomIndex];
-        this.deleteClueFromRemaining(clue);
-        return clue;
-      });
+        userCluesForTurn[i] = cluesArr[randomIndex];
+        this.deleteClueFromRemaining(userCluesForTurn[i]);
+      }
 
       initialCluesMap.set(userId, userCluesForTurn);
     });
 
     this.initialTurnClues = initialCluesMap;
-    this.cluesInHands = this.playersNumber * 3;
+    this.cluesInHands = this.playersNumber * playerCardsNumber;
 
     return initialCluesMap;
   }
